@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GapGPT - Gemini UI</title>
+    <title>TiMo</title>
 
     <script>
     window.MathJax = {
       tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
       },
       options: {
         skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
@@ -237,6 +238,7 @@
         }
 
         .input-wrapper {
+            position: fixed;
             padding: 20px 15%;
             background: var(--bg-color);
         }
@@ -353,7 +355,8 @@
         async function renderMathSafely() {
             if (window.MathJax && MathJax.typesetPromise) {
                 try {
-                    // اسکن سراسری امن برای کل صفحه چت
+                    // برای جلوگیری از کش شدن حالت‌های قبلی ریاضی، ابتدا کانتینر پاک‌سازی و سپس رندر سراسری می‌شود
+                    MathJax.typesetClear();
                     await MathJax.typesetPromise();
                 } catch (err) {
                     console.log('MathJax Error:', err);
@@ -485,14 +488,14 @@
         function parseMarkdown(text) {
             if (typeof text !== 'string') text = String(text || "");
 
-            // 1. محافظت کامل از فرمول‌های ریاضی برای جلوگیری از تخریب کاراکترها در تگ‌ها
+            // ۱. صندوقچه امن: جدا کردن تمام فرمت‌های معتبر لایتک/ریاضی قبل از خراب شدن متن
             const mathBlocks = [];
             text = text.replace(/(\$\$[\s\S]*?\$\$|\$.*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, function(match) {
                 mathBlocks.push(match);
                 return `__MATH_BLOCK_SLOT_${mathBlocks.length - 1}__`;
             });
 
-            // 2. استخراج کدهای برنامه نویسی
+            // ۲. صندوقچه امن کدها
             const codeBlocks = [];
             text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
                 let escapedCode = code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -500,17 +503,17 @@
                 return `__CODE_BLOCK_SLOT_${codeBlocks.length - 1}__`;
             });
 
-            // 3. اعمال تغییرات متنی عمومی روی بدنه متن
+            // ۳. پاکسازی و استایل‌دهی به بدنه متن خام مارک‌داون
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             text = text.replace(/\*([^\*]+)\*/g, "<strong>$1</strong>");
             text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
 
-            // 4. بازگردانی فرمول های ریاضی به حالت کاملاً دست‌نخورده
+            // ۴. بازگرداندن فرمول‌های ریاضی کاملاً دست‌نخورده به کانتینر اصلی HTML جهت اسکن MathJax
             text = text.replace(/__MATH_BLOCK_SLOT_(\d+)__/g, function(match, index) {
                 return mathBlocks[index];
             });
 
-            // 5. بازگردانی کدها
+            // ۵. بازگرداندن باکس‌های کد
             text = text.replace(/__CODE_BLOCK_SLOT_(\d+)__/g, function(match, index) {
                 const codeContent = codeBlocks[index];
                 const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
@@ -538,7 +541,7 @@
             row.appendChild(msgBox);
             chatContainer.appendChild(row);
 
-            // فراخوانی رندر مجدد ریاضی بلافاصله بعد از درج تگ‌ها
+            // اجرای آنی فرآیند اسکن دقیق ریاضیات
             renderMathSafely();
 
             if (shouldSave) {
