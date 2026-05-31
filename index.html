@@ -2,10 +2,11 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
     <title>TiMo</title>
 
     <script>
+    // تنظیمات فوق‌تخصصی MathJax برای جلوگیری از باگ‌های رندر
     window.MathJax = {
       tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -59,11 +60,10 @@
             display: flex;
             background: var(--bg-color);
             color: var(--text-color);
-            overflow-x: hidden;
+            overflow: hidden;
             position: relative;
         }
 
-        /* دکمه باز کردن منو */
         .menu-btn {
             position: absolute;
             top: 20px;
@@ -80,11 +80,8 @@
             justify-content: center;
         }
 
-        .menu-btn:hover {
-            background: var(--btn-hover);
-        }
+        .menu-btn:hover { background: var(--btn-hover); }
 
-        /* پنل کناری کشویی */
         .sidebar {
             position: fixed;
             top: 0;
@@ -98,12 +95,20 @@
             gap: 15px;
             border-left: 1px solid var(--border-color);
             z-index: 100;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
         }
 
-        .sidebar.open {
-            right: 0;
+        .sidebar.open { right: 0; }
+
+        /* یک لایه تاریک برای وقتی که منو تو موبایل باز میشه */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 90;
+            display: none;
         }
+        .overlay.show { display: block; }
 
         .close-btn {
             align-self: flex-end;
@@ -129,9 +134,7 @@
             gap: 10px;
         }
 
-        .btn:hover {
-            background: var(--btn-hover);
-        }
+        .btn:hover { background: var(--btn-hover); }
 
         .btn-primary {
             background: var(--text-color);
@@ -140,7 +143,6 @@
             font-weight: bold;
         }
 
-        /* بخش اصلی چت */
         .main-chat {
             flex: 1;
             display: flex;
@@ -155,7 +157,7 @@
             padding: 60px 15% 30px 15%;
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: 20px;
         }
 
         .message-row {
@@ -163,19 +165,15 @@
             width: 100%;
         }
 
-        .user-row {
-            justify-content: flex-start;
-        }
-
-        .bot-row {
-            justify-content: flex-start;
-        }
+        .user-row { justify-content: flex-start; }
+        .bot-row { justify-content: flex-start; }
 
         .message {
             max-width: 85%;
             line-height: 1.8;
             font-size: 15px;
             white-space: pre-wrap; 
+            word-wrap: break-word; /* جلوگیری از بیرون زدن متن‌های طولانی */
         }
 
         .user-msg {
@@ -196,7 +194,7 @@
             padding: 2px 6px;
             border-radius: 6px;
             font-family: monospace;
-            font-size: 0.95em;
+            font-size: 0.9em;
             direction: ltr;
             display: inline-block;
         }
@@ -234,7 +232,7 @@
             padding: 16px;
             overflow-x: auto;
             font-family: monospace;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .input-wrapper {
@@ -245,10 +243,10 @@
         .input-box {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 30px;
+            border-radius: 24px;
             display: flex;
             align-items: flex-end;
-            padding: 10px 20px;
+            padding: 8px 16px;
             gap: 10px;
         }
 
@@ -259,10 +257,11 @@
             color: var(--text-color);
             font-size: 16px;
             resize: none;
-            max-height: 180px;
-            min-height: 28px;
+            max-height: 150px;
+            min-height: 24px;
             outline: none;
-            line-height: 1.6;
+            line-height: 1.5;
+            padding-top: 5px;
         }
 
         .send-btn {
@@ -274,28 +273,54 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-bottom: 2px;
         }
         
         .send-btn svg {
             fill: var(--text-color);
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
         }
 
         .loading {
             display: none;
             color: var(--text-muted);
-            font-size: 14px;
+            font-size: 13px;
             padding: 5px 15%;
             font-style: italic;
         }
 
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+
+        /* ====== استایل‌های مخصوص موبایل ====== */
+        @media (max-width: 768px) {
+            .chat-container {
+                padding: 60px 5% 20px 5%; /* حاشیه کمتر برای جاگیری بهتر در موبایل */
+            }
+            .input-wrapper {
+                padding: 10px 5% 15px 5%;
+            }
+            .message {
+                max-width: 95%; /* پیام‌ها تمام صفحه می‌شن */
+                font-size: 14px;
+            }
+            .user-msg {
+                padding: 10px 18px;
+            }
+            .sidebar {
+                width: 250px; /* سایدبار جمع‌وجورتر */
+            }
+            .code-container pre {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body data-theme="dark">
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
     <button class="menu-btn" onclick="toggleSidebar()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -313,7 +338,7 @@
     <div class="main-chat">
         <div class="chat-container" id="chatContainer"></div>
 
-        <div class="loading" id="loadingIndicator">جمنای در حال پاسخ دادن است...</div>
+        <div class="loading" id="loadingIndicator">ربات در حال تایپ است...</div>
 
         <div class="input-wrapper">
             <div class="input-box">
@@ -338,29 +363,21 @@
         const userInputBox = document.getElementById("userInput");
         const loadingBox = document.getElementById("loadingIndicator");
 
-        window.onload = () => {
+        window.onload = async () => {
             if (localStorage.getItem("theme")) {
                 document.body.setAttribute("data-theme", localStorage.getItem("theme"));
             }
-            uiMessages.forEach(msg => appendMessageUI(msg.sender, msg.content, false));
+            
+            // لود کردن پیام‌های قبلی دیتابیس
+            for (let msg of uiMessages) {
+                await appendMessageUI(msg.sender, msg.content, false);
+            }
             scrollToBottom();
-            renderMathSafely();
         };
 
         window.toggleSidebar = function() {
             document.getElementById("sidebar").classList.toggle("open");
-        }
-
-        async function renderMathSafely() {
-            if (window.MathJax && MathJax.typesetPromise) {
-                try {
-                    // برای جلوگیری از کش شدن حالت‌های قبلی ریاضی، ابتدا کانتینر پاک‌سازی و سپس رندر سراسری می‌شود
-                    MathJax.typesetClear();
-                    await MathJax.typesetPromise();
-                } catch (err) {
-                    console.log('MathJax Error:', err);
-                }
-            }
+            document.getElementById("overlay").classList.toggle("show");
         }
 
         async function callGapGPT(modelName, inputData) {
@@ -399,11 +416,11 @@
                         return "متن پاسخ در ساختار دیتای سرور یافت نشد!";
                     }
                 } catch (error) {
-                    console.warn(`تلاش ${i + 1} ناموفق بود. تلاش مجدد...`);
+                    console.warn(`تلاش ${i + 1} ناموفق بود...`);
                 }
                 await new Promise(r => setTimeout(r, 1500));
             }
-            throw new Error("ارتباط با سرور برقرار نشد.");
+            throw new Error("ارتباط برقرار نشد.");
         }
 
         async function ask_api(utx) {
@@ -411,7 +428,7 @@
         }
 
         async function send_summer(text) {
-            let ftx = "فقط و فقط این گفت و گو میان ربات و کاربر رو خلاصه میکنی و نکات مهم رو در میاری طوری که ربات دیگر متوجه تمام نکات چت بشه و فقط هم خلاصه رو برام میفرستی حتی یک حرف اضافه هم نگو." + text;
+            let ftx = "خلاصه چت: " + text;
             try {
                 return await callGapGPT("gemini-2.5-flash-lite", ftx);
             } catch (error) {
@@ -423,7 +440,7 @@
             let useerRaw = userInputBox.value.trim();
             if (!useerRaw) return;
 
-            appendMessageUI('user', useerRaw, true);
+            await appendMessageUI('user', useerRaw, true);
             userInputBox.value = "";
             userInputBox.style.height = 'auto'; 
             
@@ -435,7 +452,7 @@
                 let userPromptLogic = "";
 
                 if (chats < 4) {
-                    userPromptLogic = "پیام های قبلی شاید به همراه خلاصه چت باشه اما اگر خالی بود واکنشی نده" + summer + " | " + JSON.stringify(historyLogic) + "سوال الان کاربر" + useerRaw;
+                    userPromptLogic = "خلاصه قبلی:" + summer + " | هیستوری:" + JSON.stringify(historyLogic) + " | سوال:" + useerRaw;
                     chats += 1;
                     botResponse = await ask_api(userPromptLogic);
                     
@@ -445,7 +462,7 @@
                     let sumtxt = summer + JSON.stringify(historyLogic);
                     summer = await send_summer(sumtxt); 
                     
-                    userPromptLogic = "خلاصه چت:" + summer + " - " + "سوال الان کاربر" + useerRaw;
+                    userPromptLogic = "خلاصه:" + summer + " - سوال:" + useerRaw;
                     chats = 0;
                     botResponse = await ask_api(userPromptLogic);
 
@@ -453,12 +470,11 @@
                     historyLogic.push("ربات: " + botResponse);
                 }
 
-                appendMessageUI('bot', botResponse, true);
+                await appendMessageUI('bot', botResponse, true);
                 saveState();
 
             } catch (error) {
-                console.error("Chat Error:", error);
-                appendMessageUI('bot', "مشکلی در اتصال به سرور پیش آمد. لطفاً دوباره تلاش کنید.", false);
+                await appendMessageUI('bot', "مشکلی در ارتباط پیش آمد.", false);
             } finally {
                 loadingBox.style.display = "none";
                 scrollToBottom();
@@ -487,14 +503,7 @@
         function parseMarkdown(text) {
             if (typeof text !== 'string') text = String(text || "");
 
-            // ۱. صندوقچه امن: جدا کردن تمام فرمت‌های معتبر لایتک/ریاضی قبل از خراب شدن متن
-            const mathBlocks = [];
-            text = text.replace(/(\$\$[\s\S]*?\$\$|\$.*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, function(match) {
-                mathBlocks.push(match);
-                return `__MATH_BLOCK_SLOT_${mathBlocks.length - 1}__`;
-            });
-
-            // ۲. صندوقچه امن کدها
+            // ۱. اولویت اول: محافظت از کدهای برنامه‌نویسی تا ریاضیات داخلشون دستکاری نشه
             const codeBlocks = [];
             text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
                 let escapedCode = code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -502,24 +511,35 @@
                 return `__CODE_BLOCK_SLOT_${codeBlocks.length - 1}__`;
             });
 
-            // ۳. پاکسازی و استایل‌دهی به بدنه متن خام مارک‌داون
+            // ۲. اولویت دوم: استخراج تمام فرمت‌های ریاضی
+            const mathBlocks = [];
+            text = text.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|(?<!\\)\$.*?(?<!\\)\$)/g, function(match) {
+                mathBlocks.push(match);
+                return `__MATH_BLOCK_SLOT_${mathBlocks.length - 1}__`;
+            });
+
+            // ۳. امن‌سازی HTML بدنه اصلی پیام
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // ۴. تبدیل‌های مارک‌داون استاندارد (ستاره و بک‌تیک)
+            text = text.replace(/\*\*([^\*]+)\*\*/g, "<strong>$1</strong>");
             text = text.replace(/\*([^\*]+)\*/g, "<strong>$1</strong>");
             text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
 
-            // ۴. بازگرداندن فرمول‌های ریاضی کاملاً دست‌نخورده به کانتینر اصلی HTML جهت اسکن MathJax
+            // ۵. بازگرداندن ایمن فرمول‌های ریاضی (با تبدیل امن علامت‌های کوچکتر بزرگتر داخل فرمول)
             text = text.replace(/__MATH_BLOCK_SLOT_(\d+)__/g, function(match, index) {
-                return mathBlocks[index];
+                let safeMath = mathBlocks[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return `<span class="math-tex">${safeMath}</span>`;
             });
 
-            // ۵. بازگرداندن باکس‌های کد
+            // ۶. بازگرداندن کدهای برنامه‌نویسی
             text = text.replace(/__CODE_BLOCK_SLOT_(\d+)__/g, function(match, index) {
                 const codeContent = codeBlocks[index];
                 const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
                 return `
                 <div class="code-container">
                     <div class="code-header">
-                        <button class="copy-btn" onclick="copyCodeText('${uniqueId}')">کپی کد</button>
+                        <button class="copy-btn" onclick="copyCodeText('${uniqueId}')">کپی</button>
                     </div>
                     <pre><code id="${uniqueId}">${codeContent}</code></pre>
                 </div>`;
@@ -528,7 +548,7 @@
             return text;
         }
 
-        function appendMessageUI(sender, text, shouldSave) {
+        async function appendMessageUI(sender, text, shouldSave) {
             const row = document.createElement("div");
             row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
             
@@ -540,8 +560,14 @@
             row.appendChild(msgBox);
             chatContainer.appendChild(row);
 
-            // اجرای آنی فرآیند اسکن دقیق ریاضیات
-            renderMathSafely();
+            // ترفند طلایی: رندر MathJax رو محدود می‌کنیم به همین المنت جدید تا باگ نده
+            if (window.MathJax && MathJax.typesetPromise) {
+                try {
+                    await MathJax.typesetPromise([msgBox]);
+                } catch (err) {
+                    console.error('رندر ریاضی شکست خورد:', err);
+                }
+            }
 
             if (shouldSave) {
                 uiMessages.push({ sender: sender, content: text });
@@ -553,7 +579,7 @@
         window.copyCodeText = function(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text).then(() => {
-                alert("کد با موفقیت کپی شد!");
+                alert("کپی شد!");
             });
         }
 
