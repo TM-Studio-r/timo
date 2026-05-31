@@ -292,10 +292,10 @@
             scrollToBottom();
             renderMathSafely();
         };
-
         function renderMathSafely() {
-            if (window.MathJax && MathJax.typesetPromise) {
-                MathJax.typesetPromise().catch((err) => console.log('MathJax Error:', err));
+            if (window.MathJax) {
+                // به MathJax میگیم کل صفحه یا آخرین پیام رو دوباره اسکن کنه
+                MathJax.typesetPromise().catch((err) => console.log('MathJax Render Error:', err));
             }
         }
 
@@ -467,18 +467,21 @@
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
+            // اینجا فرمول‌ها پردازش میشن
             msgBox.innerHTML = parseMarkdown(text);
             
             row.appendChild(msgBox);
             chatContainer.appendChild(row);
-
+        
+            // [تغییر کلیدی]: اینجا حتما باید MathJax رو صدا بزنیم که فرمول‌های جدید رو ببینه
+            renderMathSafely();
+        
             if (shouldSave) {
                 uiMessages.push({ sender: sender, content: text });
                 saveState();
             }
             scrollToBottom();
         }
-
         window.copyCodeText = function(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text).then(() => {
