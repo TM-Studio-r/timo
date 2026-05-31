@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GapGPT - Gemini UI</title>
+
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$']],
+        displayMath: [['$$', '$$']]
+      },
+      startup: {
+        typeset: false
+      }
+    };
+    </script>
+    <script defer src="tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #131314;
+            --sidebar-bg: #1e1f20;
+            --text-color: #e3e3e3;
+            --text-muted: #c4c7c5;
+            --border-color: #444746;
+            --user-bubble: #333537;
+            --code-bg: #1e1f20;
+            --input-bg: #1e1f20;
+            --btn-hover: #2a2b2c;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #ffffff;
+            --sidebar-bg: #f0f4f9;
+            --text-color: #1f1f1f;
+            --text-muted: #444746;
+            --border-color: #e3e3e3;
+            --user-bubble: #e1e3e1;
+            --code-bg: #f0f4f9;
+            --input-bg: #f0f4f9;
+            --btn-hover: #e0e4e9;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, Tahoma, sans-serif;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            background: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: var(--btn-hover);
+        }
+
+        .btn-primary {
+            background: var(--text-color);
+            color: var(--bg-color);
+            border: none;
+            font-weight: bold;
+        }
+
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 15%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .message-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .user-row {
+            justify-content: flex-start;
+        }
+
+        .bot-row {
+            justify-content: flex-start;
+        }
+
+        .message {
+            max-width: 85%;
+            line-height: 1.8;
+            font-size: 15px;
+            white-space: pre-wrap; 
+        }
+
+        .user-msg {
+            background: var(--user-bubble);
+            padding: 12px 24px;
+            border-radius: 24px;
+        }
+
+        .bot-msg {
+            padding: 10px 0;
+            width: 100%;
+        }
+
+        strong { font-weight: bold; }
+        
+        .inline-code {
+            background: var(--border-color);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.95em;
+            direction: ltr;
+            display: inline-block;
+        }
+
+        .code-container {
+            background: #0f0f0f;
+            color: #fff;
+            border-radius: 12px;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 6px 16px;
+            background: #1e1e1e;
+            border-bottom: 1px solid #333;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover { color: #fff; }
+
+        pre {
+            margin: 0;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .input-wrapper {
+            padding: 20px 15%;
+            background: var(--bg-color);
+        }
+
+        .input-box {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px 20px;
+            gap: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-size: 16px;
+            resize: none;
+            max-height: 180px;
+            min-height: 28px;
+            outline: none;
+            line-height: 1.6;
+        }
+
+        .send-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-btn svg {
+            fill: var(--text-color);
+            width: 24px;
+            height: 24px;
+        }
+
+        .loading {
+            display: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            padding: 5px 15%;
+            font-style: italic;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div class="sidebar">
+        <button class="btn btn-primary" onclick="newChat()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            چت جدید
+        </button>
+        <button class="btn" onclick="toggleTheme()">تغییر تم 🌓</button>
+    </div>
+
+    <div class="main-chat">
+        <div class="chat-container" id="chatContainer"></div>
+
+        <div class="loading" id="loadingIndicator">جمنای در حال پاسخ دادن است...</div>
+
+        <div class="input-wrapper">
+            <div class="input-box">
+                <textarea id="userInput" placeholder="پیام خود را بنویسید..." rows="1" oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
+                <button class="send-btn" onclick="sendMessage()">
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = "sk-dhlboXx229zWJrpnc9EAr3fr52UrsXOk85ZevwXfalwkRSNd";
+        const API_URL = "https://api.gapgpt.app/v1/responses"; 
+
+        // منطق دیتابیس لوکال
+        let historyLogic = JSON.parse(localStorage.getItem("bot_history")) || [];
+        let summer = localStorage.getItem("bot_summer") || "";
+        let chats = parseInt(localStorage.getItem("bot_chats")) || 0;
+        let uiMessages = JSON.parse(localStorage.getItem("bot_ui")) || []; 
+
+        const chatContainer = document.getElementById("chatContainer");
+        const userInputBox = document.getElementById("userInput");
+        const loadingBox = document.getElementById("loadingIndicator");
+
+        window.onload = () => {
+            if (localStorage.getItem("theme")) {
+                document.body.setAttribute("data-theme", localStorage.getItem("theme"));
+            }
+            uiMessages.forEach(msg => appendMessageUI(msg.sender, msg.content, false));
+            scrollToBottom();
+            renderMathSafely();
+        };
+
+        function renderMathSafely() {
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetPromise().catch((err) => console.log('MathJax Error:', err));
+            }
+        }
+
+        // تابع جامع و ضد قطعی ارتباط با سرور
+        async function callGapGPT(modelName, inputData) {
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: modelName,
+                            input: inputData
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.output_text || data.response || "پاسخی دریافت نشد.";
+                    }
+                } catch (error) {
+                    console.warn(`تلاش ${i + 1} ناموفق بود. تلاش مجدد...`);
+                }
+                // مکث 1.5 ثانیه‌ای بین هر بار تلاش مجدد
+                await new Promise(r => setTimeout(r, 1500));
+            }
+            throw new Error("ارتباط با سرور برقرار نشد.");
+        }
+
+        async function ask_api(utx) {
+            return await callGapGPT("gpt-5-nano", utx);
+        }
+
+        async function send_summer(text) {
+            let ftx = "فقط و فقط این گفت و گو میان ربات و کاربر رو خلاصه میکنی و نکات مهم رو در میاری طوری که ربات دیگر متوجه تمام نکات چت بشه و فقط هم خلاصه رو برام میفرستی حتی یک حرف اضافه هم نگو." + text;
+            try {
+                return await callGapGPT("gemini-2.5-flash-lite", ftx);
+            } catch (error) {
+                return summer; // در صورت خرابی کامل سرور، خلاصه قبلی حفظ می‌شود
+            }
+        }
+
+        // فرآیند اصلی چت
+        window.sendMessage = async function() {
+            let useerRaw = userInputBox.value.trim();
+            if (!useerRaw) return;
+
+            appendMessageUI('user', useerRaw, true);
+            userInputBox.value = "";
+            userInputBox.style.height = 'auto'; 
+            
+            loadingBox.style.display = "block";
+            scrollToBottom();
+
+            try {
+                let botResponse = "";
+                let userPromptLogic = "";
+
+                if (chats < 4) {
+                    userPromptLogic = "پیام های قبلی شاید به همراه خلاصه چت باشه اما اگر خالی بود واکنشی نده" + summer + " | " + JSON.stringify(historyLogic) + "سوال الان کاربر" + useerRaw;
+                    chats += 1;
+                    botResponse = await ask_api(userPromptLogic);
+                    
+                    historyLogic.push("کاربر: " + userPromptLogic);
+                    historyLogic.push("ربات: " + botResponse);
+                } else {
+                    let sumtxt = summer + JSON.stringify(historyLogic);
+                    summer = await send_summer(sumtxt); 
+                    
+                    userPromptLogic = "خلاصه چت:" + summer + " - " + "سوال الان کاربر" + useerRaw;
+                    chats = 0;
+                    botResponse = await ask_api(userPromptLogic);
+
+                    historyLogic.push("کاربر: " + userPromptLogic);
+                    historyLogic.push("ربات: " + botResponse);
+                }
+
+                appendMessageUI('bot', botResponse, true);
+                saveState();
+                renderMathSafely();
+
+            } catch (error) {
+                console.error(error);
+                appendMessageUI('bot', "مشکلی در اتصال به سرور پیش آمد. لطفاً دوباره تلاش کنید.", false);
+            } finally {
+                loadingBox.style.display = "none";
+                scrollToBottom();
+            }
+        };
+
+        function saveState() {
+            localStorage.setItem("bot_history", JSON.stringify(historyLogic));
+            localStorage.setItem("bot_summer", summer);
+            localStorage.setItem("bot_chats", chats.toString());
+            localStorage.setItem("bot_ui", JSON.stringify(uiMessages));
+        }
+
+        window.newChat = function() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        window.toggleTheme = function() {
+            const body = document.body;
+            const newTheme = body.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            body.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+        }
+
+        function parseMarkdown(text) {
+            const codeBlocks = [];
+            
+            // استخراج و فرار از کدهای HTML داخل بلاک‌ها
+            text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
+                let escapedCode = code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                codeBlocks.push(escapedCode);
+                return `__CODE_BLOCK_SLOT_${codeBlocks.length - 1}__`;
+            });
+
+            // فرار دادن تگ‌های متون عادی
+            text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            text = text.replace(/\*([^\*]+)\*/g, "<strong>$1</strong>");
+            text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
+
+            // بازگردانی بلاک‌های کد
+            text = text.replace(/__CODE_BLOCK_SLOT_(\d+)__/g, function(match, index) {
+                const codeContent = codeBlocks[index];
+                const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
+                return `
+                <div class="code-container">
+                    <div class="code-header">
+                        <button class="copy-btn" onclick="copyCodeText('${uniqueId}')">کپی کد</button>
+                    </div>
+                    <pre><code id="${uniqueId}">${codeContent}</code></pre>
+                </div>`;
+            });
+
+            return text;
+        }
+
+        function appendMessageUI(sender, text, shouldSave) {
+            const row = document.createElement("div");
+            row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
+            
+            const msgBox = document.createElement("div");
+            msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
+            
+            msgBox.innerHTML = parseMarkdown(text);
+            
+            row.appendChild(msgBox);
+            chatContainer.appendChild(row);
+
+            if (shouldSave) {
+                uiMessages.push({ sender: sender, content: text });
+                saveState();
+            }
+            scrollToBottom();
+        }
+
+        window.copyCodeText = function(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("کد با موفقیت کپی شد!");
+            });
+        }
+
+        window.autoResize = function(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
+
+        window.handleEnter = function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
