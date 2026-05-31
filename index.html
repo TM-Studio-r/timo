@@ -292,10 +292,17 @@
             scrollToBottom();
             renderMathSafely();
         };
-        function renderMathSafely() {
-            if (window.MathJax) {
-                // به MathJax میگیم کل صفحه یا آخرین پیام رو دوباره اسکن کنه
-                MathJax.typesetPromise().catch((err) => console.log('MathJax Render Error:', err));
+        async function renderMathSafely() {
+            if (window.MathJax && MathJax.typesetPromise) {
+                try {
+                    // بهش میگیم فقط آخرین پیام رو پردازش کنه (سریع‌تر و دقیق‌تر)
+                    const lastMessage = chatContainer.lastElementChild;
+                    if (lastMessage) {
+                        await MathJax.typesetPromise([lastMessage]);
+                    }
+                } catch (err) {
+                    console.log('MathJax Render Error:', err);
+                }
             }
         }
 
@@ -460,21 +467,20 @@
             return text;
         }
 
-        function appendMessageUI(sender, text, shouldSave) {
+        async function appendMessageUI(sender, text, shouldSave) {
             const row = document.createElement("div");
             row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
             
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
-            // اینجا فرمول‌ها پردازش میشن
             msgBox.innerHTML = parseMarkdown(text);
             
             row.appendChild(msgBox);
             chatContainer.appendChild(row);
-        
-            // [تغییر کلیدی]: اینجا حتما باید MathJax رو صدا بزنیم که فرمول‌های جدید رو ببینه
-            renderMathSafely();
+            
+            // اینجا از await استفاده می‌کنیم که مطمئن بشیم رندر انجام شده
+            await renderMathSafely(); 
         
             if (shouldSave) {
                 uiMessages.push({ sender: sender, content: text });
