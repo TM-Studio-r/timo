@@ -275,7 +275,6 @@
         const API_KEY = "sk-dhlboXx229zWJrpnc9EAr3fr52UrsXOk85ZevwXfalwkRSNd";
         const API_URL = "https://api.gapgpt.app/v1/responses"; 
 
-        // منطق دیتابیس لوکال
         let historyLogic = JSON.parse(localStorage.getItem("bot_history")) || [];
         let summer = localStorage.getItem("bot_summer") || "";
         let chats = parseInt(localStorage.getItem("bot_chats")) || 0;
@@ -300,7 +299,7 @@
             }
         }
 
-        // تابع جامع با قابلیت عیب‌یابی خودکار
+        // استخراج دقیق مسیر بر اساس لاگ کنسول شما
         async function callGapGPT(modelName, inputData) {
             for (let i = 0; i < 3; i++) {
                 try {
@@ -318,16 +317,28 @@
                     
                     if (response.ok) {
                         const data = await response.json();
-                        console.log("خروجی خام سرور:", data); // چاپ در کنسول
                         
-                        // اینجا تمام حالت‌های ممکن رو بررسی می‌کنیم
-                        if (data.output_text) return data.output_text;
-                        if (data.response) return data.response;
-                        if (data.text) return data.text;
-                        if (data.choices && data.choices[0] && data.choices[0].message) return data.choices[0].message.content;
+                        // اینجا دقیقاً همون مسیر پیچیده ای که تو کنسولت بود رو باز می‌کنیم
+                        if (data.output && Array.isArray(data.output)) {
+                            // پیدا کردن آبجکتی که نقش دستیار رو داره
+                            const assistantMsg = data.output.find(item => item.type === 'message' && item.role === 'assistant');
+                            if (assistantMsg && assistantMsg.content && assistantMsg.content.length > 0) {
+                                let contentNode = assistantMsg.content[0];
+                                
+                                // متن ممکنه مستقیما تو text یا به صورت یک آبجکت تودرتو باشه
+                                let finalStr = contentNode.text || contentNode.value || contentNode;
+                                if (typeof finalStr === 'object' && finalStr !== null) {
+                                    finalStr = finalStr.text || finalStr.value || JSON.stringify(finalStr);
+                                }
+                                return String(finalStr); // تبدیل قطعی به String تا پارسر کرش نکنه
+                            }
+                        }
                         
-                        // اگر هیچکدوم نبود، دیتای خام رو پرینت میکنه تا ببینی سرور چی فرستاده!
-                        return "ساختار دیتای دریافتی فرق دارد. این پاسخ سرور است:\n```json\n" + JSON.stringify(data, null, 2) + "\n```";
+                        // مسیرهای بک‌آپ
+                        if (data.output_text) return String(data.output_text);
+                        if (data.response) return String(data.response);
+                        
+                        return "متن پاسخ در ساختار دیتای سرور یافت نشد!";
                     }
                 } catch (error) {
                     console.warn(`تلاش ${i + 1} ناموفق بود. تلاش مجدد...`);
@@ -346,11 +357,10 @@
             try {
                 return await callGapGPT("gemini-2.5-flash-lite", ftx);
             } catch (error) {
-                return summer; 
+                return summer || ""; 
             }
         }
 
-        // فرآیند اصلی چت
         window.sendMessage = async function() {
             let useerRaw = userInputBox.value.trim();
             if (!useerRaw) return;
@@ -390,7 +400,7 @@
                 renderMathSafely();
 
             } catch (error) {
-                console.error(error);
+                console.error("Chat Error:", error);
                 appendMessageUI('bot', "مشکلی در اتصال به سرور پیش آمد. لطفاً دوباره تلاش کنید.", false);
             } finally {
                 loadingBox.style.display = "none";
@@ -418,22 +428,23 @@
         }
 
         function parseMarkdown(text) {
+            // گارد امنیتی: اگر متن خالی یا نامعتبر بود، به رشته خالی تبدیل بشه
+            if (typeof text !== 'string') {
+                text = String(text || "");
+            }
+
             const codeBlocks = [];
             
-            // استخراج و فرار از کدهای HTML داخل بلاک‌ها
             text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
                 let escapedCode = code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 codeBlocks.push(escapedCode);
                 return `__CODE_BLOCK_SLOT_${codeBlocks.length - 1}__`;
             });
 
-            // فرار دادن تگ‌های متون عادی
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
             text = text.replace(/\*([^\*]+)\*/g, "<strong>$1</strong>");
             text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
 
-            // بازگردانی بلاک‌های کد
             text = text.replace(/__CODE_BLOCK_SLOT_(\d+)__/g, function(match, index) {
                 const codeContent = codeBlocks[index];
                 const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
