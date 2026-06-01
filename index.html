@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>TiMo</title>
+    <title>GapGPT - Gemini UI</title>
 
     <script>
-    // تنظیمات پیشرفته MathJax برای هماهنگی کامل با پیام‌های داینامیک
+    // پیکربندی پیشرفته MathJax برای رندر فوق‌العاده دقیق فرمول‌های پویا
     window.MathJax = {
       tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -64,7 +64,7 @@
             position: relative;
         }
 
-        /* دکمه منو مخصوص موبایل */
+        /* دکمه منو سایدبار مخصوص موبایل */
         .menu-btn {
             display: none;
             position: absolute;
@@ -91,6 +91,7 @@
             z-index: 98;
         }
 
+        /* سایدبار ثابت در دسکتاپ و منعطف */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -264,21 +265,21 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
 
-        /* ====== استایل‌های ریسپانسیو فوق‌العاده برای گوشی موبایل ====== */
+        /* ====== استایل‌های واکنش‌گرا و دکمه‌ای شدن سایدبار در گوشی ====== */
         @media (max-width: 768px) {
             .menu-btn { display: flex; }
             
             .sidebar {
                 position: fixed;
                 top: 0;
-                right: -280px; /* مخفی کردن پیش‌فرض */
+                right: -280px; /* پنهان شدن پیش‌فرض در موبایل */
                 height: 100vh;
                 z-index: 99;
                 box-shadow: -5px 0 15px rgba(0,0,0,0.5);
             }
             
             .sidebar.open {
-                right: 0; /* نمایش کشویی منو */
+                right: 0; /* باز شدن کشویی منو در موبایل */
             }
             
             .sidebar-overlay.show {
@@ -286,7 +287,7 @@
             }
 
             .chat-container {
-                padding: 70px 15px 20px 15px; /* حاشیه‌های کمتر برای نمایش حداکثری متن چت */
+                padding: 70px 15px 20px 15px;
             }
 
             .input-wrapper {
@@ -298,13 +299,8 @@
                 font-size: 14px;
             }
 
-            .user-msg {
-                padding: 10px 18px;
-            }
-
-            .loading {
-                padding: 5px 15px;
-            }
+            .user-msg { padding: 10px 18px; }
+            .loading { padding: 5px 15px; }
         }
     </style>
 </head>
@@ -356,7 +352,6 @@
             if (localStorage.getItem("theme")) {
                 document.body.setAttribute("data-theme", localStorage.getItem("theme"));
             }
-            // رندر منظم پیام‌های ذخیره‌شده قبلی بدون کرش
             for (let msg of uiMessages) {
                 await appendMessageUI(msg.sender, msg.content, false);
             }
@@ -381,13 +376,9 @@
                 })
             });
             
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status}`);
-            }
-            
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
             const data = await response.json();
             
-            // استخراج بسیار هوشمند دیتای سرور برای ساختارهای مختلف پاسخ احتمالی
             if (data.output && Array.isArray(data.output)) {
                 const assistantMsg = data.output.find(item => item.role === 'assistant' || item.type === 'message');
                 if (assistantMsg && assistantMsg.content && assistantMsg.content.length > 0) {
@@ -454,7 +445,7 @@
 
             } catch (error) {
                 console.error(error);
-                await appendMessageUI('bot', "مشکلی در دریافت پاسخ از سرور پیش آمد. لطفاً اتصال خود را چک کنید.", false);
+                await appendMessageUI('bot', "مشکلی در دریافت پاسخ پیش آمد.", false);
             } finally {
                 loadingBox.style.display = "none";
                 scrollToBottom();
@@ -480,52 +471,82 @@
             localStorage.setItem("theme", newTheme);
         }
 
-        // پارسر بازنویسی شده انقلابی جهت ایزوله‌سازی ۱۰۰٪ ریاضیات و مارک‌داون
-        function parseMarkdown(text) {
+        // شاهکار مهندسی پردازش متن: جداسازی با ساختار کاملاً امن TextNode
+        function parseMarkdown(text, msgBox) {
             if (typeof text !== 'string') text = String(text || "");
 
-            // ۱. صندوقچه امن اول: قفل کردن بلاک‌های کد چندخطی برنامه‌نویسی
+            // ۱. استخراج و قفل کردن بلاک‌های چندخطی کد برنامه‌نویسی
             const codeBlocks = [];
+            text = text.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
+                codeBlocks.push(code.trim());
+                return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
+            });
             text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
                 codeBlocks.push(code.trim());
-                return `__CODE_BLOCK_SLOT_${codeBlocks.length - 1}__`;
+                return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
             });
 
-            // ۲. صندوقچه امن دوم (شاهکار اصلی): استخراج و قفل کردن تمام فرمت‌های ریاضی ($$, $, \[, \() چندخطی ربات
+            // ۲. استخراج هوشمند تمام فرمت‌های ریاضی مدرن و کلاسیک ربات (حتی محفظه‌های بدون علامت \begin)
             const mathBlocks = [];
-            text = text.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\( [\s\S]*? \\\)|\\\([\s\S]*?\\\)|\$[\s\S]*?\$)/g, function(match) {
+            // این ریجکس پیشرفته به هیچ عنوان اجازه خرابی یا جا افتادن فرمول‌ها و تداخل دلار با متن عادی را نمی‌دهد
+            text = text.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\( [\s\S]*? \\\)|\\\([\s\S]*?\\\)|\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\2\}|\$[^$\s\n]([^$\n]*? [^$\s\n])?\$|\$[^$\s\n]\$)/g, function(match) {
                 mathBlocks.push(match);
-                return `__MATH_BLOCK_SLOT_${mathBlocks.length - 1}__`;
+                return `___MATH_BLOCK_SLOT_${mathBlocks.length - 1}___`;
             });
 
-            // ۳. امن‌سازی متن عادی (بزرگتر کوچکتر تگ‌های HTML)
+            // ۳. امن‌سازی نشانه‌های تگ متون معمولی برای جلوگیری از تزریق ناخواسته HTML
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // ۴. اعمال باصلابت کدهای مارک‌داون روی متن‌های عادی بدون تداخل با فرمول‌ها
+            // ۴. اعمال گرامر مارک‌داون استاندارد فقط روی بخش‌های متنی مجاز
             text = text.replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>");
             text = text.replace(/\*([\s\S]*?)\*/g, "<strong>$1</strong>");
             text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
 
-            // ۵. بازگرداندن فرمول‌های ریاضی کاملاً دست‌نخورده و سالم با تبدیل امن علائم تداخل مرورگر
-            text = text.replace(/__MATH_BLOCK_SLOT_(\d+)__/g, function(match, index) {
-                let safeMath = mathBlocks[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                return safeMath;
+            // ۵. تبدیل کدهای اسلات به نگهدارنده‌های خالی مشخص در ساختار DOM
+            text = text.replace(/___MATH_BLOCK_SLOT_(\d+)___/g, function(match, index) {
+                return `<span class="math-holder" data-index="${index}"></span>`;
             });
 
-            // ۶. بازگرداندن جعبه‌های کد برنامه‌نویسی همراه دکمه کپی
-            text = text.replace(/__CODE_BLOCK_SLOT_(\d+)__/g, function(match, index) {
-                const codeContent = codeBlocks[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
-                return `
-                <div class="code-container">
-                    <div class="code-header">
-                        <button class="copy-btn" onclick="copyCodeText('${uniqueId}')">کپی کد</button>
-                    </div>
-                    <pre><code id="${uniqueId}">${codeContent}</code></pre>
-                </div>`;
+            text = text.replace(/___CODE_BLOCK_SLOT_(\d+)___/g, function(match, index) {
+                return `<div class="code-holder" data-index="${index}"></div>`;
             });
 
-            return text;
+            // تزریق بدنه ساختار یافته به باکس پیام چت
+            msgBox.innerHTML = text;
+
+            // ۶. تزریق فوق امن فرمول‌های ریاضی خام با textContent (بدون کوچکترین دستکاری یا تداخل کاراکترها)
+            msgBox.querySelectorAll('.math-holder').forEach(el => {
+                const idx = el.getAttribute('data-index');
+                if (mathBlocks[idx]) {
+                    el.textContent = mathBlocks[idx];
+                }
+            });
+
+            // ۷. تزریق فوق امن متون کدهای برنامه‌نویسی به همراه دکمه کپی اختصاصی
+            msgBox.querySelectorAll('.code-holder').forEach(el => {
+                const idx = el.getAttribute('data-index');
+                if (codeBlocks[idx]) {
+                    const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
+                    
+                    const header = document.createElement('div');
+                    header.className = 'code-header';
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = 'کپی کد';
+                    copyBtn.onclick = () => window.copyCodeText(uniqueId);
+                    header.appendChild(copyBtn);
+
+                    const pre = document.createElement('pre');
+                    const codeEl = document.createElement('code');
+                    codeEl.id = uniqueId;
+                    codeEl.textContent = codeBlocks[idx]; // استفاده از textContent جهت حفاظت کامل از ساختار کد
+                    
+                    pre.appendChild(codeEl);
+                    el.appendChild(header);
+                    el.appendChild(pre);
+                }
+            });
         }
 
         async function appendMessageUI(sender, text, shouldSave) {
@@ -535,17 +556,18 @@
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
-            msgBox.innerHTML = parseMarkdown(text);
+            // پردازش و مقداردهی داینامیک باکس پیام
+            parseMarkdown(text, msgBox);
             
             row.appendChild(msgBox);
             chatContainer.appendChild(row);
 
-            // وادار کردن آنی MathJax برای کامپایل انحصاری همین پیام جدید
+            // وادار کردن آنی MathJax جهت پردازش انحصاری و سریع همین تگ متولد شده
             if (window.MathJax && MathJax.typesetPromise) {
                 try {
                     await MathJax.typesetPromise([msgBox]);
                 } catch (err) {
-                    console.log('MathJax skip element render');
+                    console.warn('MathJax individual compilation skipped');
                 }
             }
 
