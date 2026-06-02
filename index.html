@@ -569,32 +569,32 @@
             const row = document.createElement("div");
             row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
             
-            // لایه اصلی که پیام و دکمه‌ها در آن قرار می‌گیرند
-            const messageWrapper = document.createElement("div");
-            messageWrapper.style.display = "flex";
-            messageWrapper.style.flexDirection = "column";
-            messageWrapper.style.maxWidth = "85%";
+            // یک کانتینر می‌سازیم که پیام و دکمه‌ها در آن به ترتیب عمودی (ستون) قرار بگیرند
+            const columnWrapper = document.createElement("div");
+            columnWrapper.style.display = "flex";
+            columnWrapper.style.flexDirection = "column";
+            columnWrapper.style.width = "100%";
             
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
-            // پردازش پیام
-            msgBox.innerHTML = parseMarkdown(text);
-            messageWrapper.appendChild(msgBox);
+            // استفاده از همان تابع parseMarkdown اصلی و حرفه‌ای خودت
+            parseMarkdown(text, msgBox);
+            
+            columnWrapper.appendChild(msgBox);
         
-            // افزودن دکمه‌ها فقط برای ربات (زیر پیام)
+            // افزودن دکمه‌ها فقط برای پیام‌های ربات - زیر پیام
             if (sender === 'bot') {
                 const actionsDiv = document.createElement("div");
                 actionsDiv.className = "bot-actions";
                 actionsDiv.style.display = "flex";
-                actionsDiv.style.gap = "8px";
-                actionsDiv.style.marginTop = "5px";
+                actionsDiv.style.gap = "10px";
+                actionsDiv.style.marginTop = "8px";
         
                 const copyBtn = document.createElement("button");
                 copyBtn.className = "action-btn";
-                copyBtn.style.padding = "2px 8px";
-                copyBtn.style.fontSize = "11px";
                 copyBtn.textContent = "📋 کپی";
+                copyBtn.style.fontSize = "11px";
                 copyBtn.onclick = () => {
                     navigator.clipboard.writeText(text);
                     alert("پیام کپی شد!");
@@ -602,9 +602,8 @@
         
                 const mathBtn = document.createElement("button");
                 mathBtn.className = "action-btn";
-                mathBtn.style.padding = "2px 8px";
-                mathBtn.style.fontSize = "11px";
                 mathBtn.textContent = "🧮 ریاضی";
+                mathBtn.style.fontSize = "11px";
                 mathBtn.onclick = () => {
                     const encodedQuery = encodeURIComponent(text);
                     window.open(`nit5.html?action=process&value=${encodedQuery}`, '_blank');
@@ -612,13 +611,13 @@
         
                 actionsDiv.appendChild(copyBtn);
                 actionsDiv.appendChild(mathBtn);
-                messageWrapper.appendChild(actionsDiv);
+                columnWrapper.appendChild(actionsDiv);
             }
             
-            row.appendChild(messageWrapper);
+            row.appendChild(columnWrapper);
             chatContainer.appendChild(row);
         
-            // رندر ریاضیات
+            // پردازش ریاضیات توسط MathJax
             if (window.MathJax && MathJax.typesetPromise) {
                 await MathJax.typesetPromise([msgBox]).catch(() => {});
             }
