@@ -19,7 +19,6 @@
             src: url('e.ttf') format('truetype');
         }
 
-        /* اعمال فونت روی کل بدنه سایت */
         :root {
             --bg-color: #0f0f0f;
             --sidebar-bg: #131314;
@@ -162,10 +161,6 @@
             background: var(--border-color);
             padding: 2px 6px;
             border-radius: 6px;
-            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
-            font-weight: 500;
-            font-variation-settings: 'ROND' 100;
-            font-style: normal;
             font-size: 0.95em;
             display: inline-block;
             direction: ltr;
@@ -208,10 +203,6 @@
             margin: 0;
             padding: 16px;
             overflow-x: auto;
-            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
-            font-weight: 500;
-            font-variation-settings: 'ROND' 100;
-            font-style: normal;
             font-size: 14px;
             direction: ltr;
             text-align: left;            
@@ -238,10 +229,6 @@
             border: none;
             color: var(--text-color);
             font-size: 16px;
-            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
-            font-weight: 500;
-            font-variation-settings: 'ROND' 100;
-            font-style: normal;
             resize: none;
             max-height: 180px;
             min-height: 28px;
@@ -488,7 +475,6 @@
         function parseMarkdown(text, msgBox) {
             if (typeof text !== 'string') text = String(text || "");
 
-            // ۱. قفل کردن کدهای برنامه‌نویسی
             const codeBlocks = [];
             text = text.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
                 codeBlocks.push(code.trim());
@@ -499,34 +485,28 @@
                 return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
             });
 
-            // ۲. قفل کردن ریاضیات خام تا کدهای استایل‌دهی (مارک‌داون) توش تداخل ایجاد نکنند
             const mathBlocks = [];
             text = text.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\( [\s\S]*? \\\)|\\\([\s\S]*?\\\)|\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\2\}|\$[^$\s\n]([^$\n]*? [^$\s\n])?\$|\$[^$\s\n]\$)/g, function(match) {
                 mathBlocks.push(match);
                 return `___MATH_BLOCK_SLOT_${mathBlocks.length - 1}___`;
             });
 
-            // ۳. امن‌سازی HTML
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // ۴. استایل‌دهی مارک‌داون‌های معمولی (بولد و...)
             text = text.replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>");
             text = text.replace(/\*([\s\S]*?)\*/g, "<strong>$1</strong>");
             text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
 
-            // ۵. بازگرداندن ریاضیات خام دقیقاً همونطور که از سرور اومده (با تمام $ ها و تگ‌های اولیه‌اش)
             text = text.replace(/___MATH_BLOCK_SLOT_(\d+)___/g, function(match, index) {
                 return mathBlocks[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
             });
 
-            // ۶. آماده‌سازی اسلات کدهای برنامه‌نویسی
             text = text.replace(/___CODE_BLOCK_SLOT_(\d+)___/g, function(match, index) {
                 return `<div class="code-holder" data-index="${index}"></div>`;
             });
 
             msgBox.innerHTML = text;
 
-            // ۷. تزریق کدهای برنامه‌نویسی خام
             msgBox.querySelectorAll('.code-holder').forEach(el => {
                 const idx = el.getAttribute('data-index');
                 if (codeBlocks[idx]) {
@@ -554,6 +534,9 @@
         }
         
         async function appendMessageUI(sender, text, shouldSave) {
+            // متغیر text اینجا دقیقاً همون رشته‌ی ۱۰۰٪ خام و دست‌نخورده از سرور هست
+            const absoluteRawText = text;
+
             const row = document.createElement("div");
             row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
             
@@ -570,6 +553,9 @@
             columnWrapper.appendChild(msgBox);
         
             if (sender === 'bot') {
+                // چاپ متن خام تو کنسول واسه اینکه با چشمای خودت ببینی هیچی ازش کم نشده
+                console.log("متن خام دریافت شده از سرور:", absoluteRawText);
+
                 const actionsDiv = document.createElement("div");
                 actionsDiv.className = "bot-actions";
                 actionsDiv.style.display = "flex";
@@ -581,9 +567,9 @@
                 copyBtn.textContent = "📋 کپی";
                 copyBtn.style.fontSize = "11px";
                 copyBtn.onclick = () => {
-                    // متغیر text اینجا دقیقاً همون رشته خامِ دست‌نخورده‌ست!
-                    navigator.clipboard.writeText(text);
-                    alert("پیام کپی شد!");
+                    // ارسال متن خام به کلیپ‌بورد
+                    navigator.clipboard.writeText(absoluteRawText);
+                    alert("پیام کاملاً خام کپی شد!");
                 };
         
                 const mathBtn = document.createElement("button");
@@ -591,9 +577,9 @@
                 mathBtn.textContent = "🧮 ریاضی";
                 mathBtn.style.fontSize = "11px";
                 mathBtn.onclick = () => {
-                    // متغیر text اینجا همون رشته خامِ دست‌نخورده‌ست!
-                    const encodedQuery = encodeURIComponent(text);
-                    window.open(`xmath.html?action=process&value=${encodedQuery}`, '_blank');
+                    // تبدیل استاندارد URL، و بازگرداندن علامت %24 به خود $ برای نمایش مستقیم تو آدرس‌بار!
+                    const rawEncoded = encodeURIComponent(absoluteRawText).replace(/%24/g, '$');
+                    window.open(`xmath.html?action=process&value=${rawEncoded}`, '_blank');
                 };
         
                 actionsDiv.appendChild(copyBtn);
