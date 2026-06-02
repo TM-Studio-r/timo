@@ -87,25 +87,27 @@ placeholder="متن جمنای را اینجا Paste کن"></textarea>
 </div>
 
 <script>
-
 function renderText(){
-
-    const text =
-        document.getElementById("input").value;
-
-    document.getElementById("output").innerHTML =
-        text.replace(/\n/g,"<br>");
-
+    const text = document.getElementById("input").value;
+    document.getElementById("output").innerHTML = text.replace(/\n/g,"<br>");
     MathJax.typesetPromise();
 }
-window.addEventListener('load', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const value = urlParams.get('value');
-    const ta = document.getElementById('input');
-    ta.value = value;
-    renderText();
-});
 
+window.addEventListener('load', () => {
+    // ۱. متن خام رو از حافظه می‌خونیم
+    const rawData = localStorage.getItem('raw_math_data');
+    
+    if (rawData) {
+        const ta = document.getElementById('input');
+        ta.value = rawData;
+        
+        // ۲. متن رو رندر می‌کنیم
+        renderText();
+        
+        // ۳. حافظه رو پاک می‌کنیم که برای دفعات بعد قاطی نشه
+        localStorage.removeItem('raw_math_data');
+    }
+});
 </script>
 
 </body>
