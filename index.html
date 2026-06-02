@@ -188,6 +188,8 @@
             font-size: 0.95em;
             direction: ltr;
             display: inline-block;
+            direction: ltr;
+            text-align: left;             
         }
 
         .code-container {
@@ -207,6 +209,8 @@
             padding: 6px 16px;
             background: #1e1e1e;
             border-bottom: 1px solid #333;
+            direction: ltr;
+            text-align: left;             
         }
 
         .copy-btn {
@@ -215,6 +219,8 @@
             color: #aaa;
             cursor: pointer;
             font-size: 12px;
+            direction: rtl;
+            text-align: right;             
         }
         .copy-btn:hover { color: #fff; }
 
@@ -227,6 +233,8 @@
             font-variation-settings: 'ROND' 100;
             font-style: normal;
             font-size: 14px;
+            direction: ltr;
+            text-align: left;            
         }
 
         .input-wrapper {
@@ -613,8 +621,8 @@
 
         window.handleEnter = function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+                e,sendMessage();    
+                preventDefault();
             }
         }
 
