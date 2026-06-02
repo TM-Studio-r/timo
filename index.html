@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>Aio</title>
+    <title>GapGPT - Gemini UI</title>
 
     <script>
-    // تنظیمات استاندارد و امن MathJax
+    // تنظیمات استاندارد و پایدار MathJax
     window.MathJax = {
       tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
         displayMath: [['$$', '$$'], ['\\[', '\\]']],
-        processEscapes: true
+        processEscapes: true,
+        processEnvironments: true
       },
       options: {
-        // اسپان‌ها رو نادیده نمی‌گیریم تا بتونیم فرمول‌ها رو با خیال راحت توشون تزریق کنیم
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
       },
       startup: {
         typeset: false
@@ -65,6 +67,7 @@
             position: relative;
         }
 
+        /* دکمه منو موبایل */
         .menu-btn {
             display: none;
             position: absolute;
@@ -82,6 +85,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
+        /* لایه تیره موبایل */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -90,6 +94,7 @@
             z-index: 98;
         }
 
+        /* سایدبار */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -143,7 +148,6 @@
             max-width: 85%;
             line-height: 1.8;
             font-size: 15px;
-            white-space: pre-wrap; 
             word-wrap: break-word;
         }
 
@@ -304,7 +308,9 @@
 
     <div class="main-chat">
         <div class="chat-container" id="chatContainer"></div>
+
         <div class="loading" id="loadingIndicator">جمنای در حال پاسخ دادن است...</div>
+
         <div class="input-wrapper">
             <div class="input-box">
                 <textarea id="userInput" placeholder="پیام خود را بنویسید..." rows="1" oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
@@ -323,7 +329,6 @@
         let summer = localStorage.getItem("bot_summer") || "";
         let chats = parseInt(localStorage.getItem("bot_chats")) || 0;
         let uiMessages = JSON.parse(localStorage.getItem("bot_ui")) || []; 
-        let mathJaxQueue = Promise.resolve(); // صف‌بندی ایمن برای جلوگیری از کرش کردن MathJax
 
         const chatContainer = document.getElementById("chatContainer");
         const userInputBox = document.getElementById("userInput");
@@ -347,11 +352,19 @@
         async function ask_api(utx) {
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
-                body: JSON.stringify({ model: "gpt-5-nano", input: utx })
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-5-nano",
+                    input: utx
+                })
             });
+            
             if (!response.ok) throw new Error(`API Error: ${response.status}`);
             const data = await response.json();
+            
             if (data.output && Array.isArray(data.output)) {
                 const assistantMsg = data.output.find(item => item.role === 'assistant' || item.type === 'message');
                 if (assistantMsg && assistantMsg.content && assistantMsg.content.length > 0) {
@@ -366,8 +379,14 @@
             let ftx = "فقط و فقط این گفت و گو میان ربات و کاربر رو خلاصه میکنی و نکات مهم رو در میاری طوری که ربات دیگر متوجه تمام نکات چت بشه و فقط هم خلاصه رو برام میفرستی حتی یک حرف اضافه هم نگو." + text;
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
-                body: JSON.stringify({ model: "gemini-2.5-flash-lite", input: ftx })
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "gemini-2.5-flash-lite",
+                    input: ftx
+                })
             });
             const data = await response.json();
             return data.output_text || data.response || "";
@@ -392,20 +411,24 @@
                     userPromptLogic = "پیام های قبلی شاید به همراه خلاصه چت باشه اما اگر خالی بود واکنشی نده" + summer + " | " + JSON.stringify(historyLogic) + "سوال الان کاربر" + useerRaw;
                     chats += 1;
                     botResponse = await ask_api(userPromptLogic);
+                    
                     historyLogic.push("کاربر: " + userPromptLogic);
                     historyLogic.push("ربات: " + botResponse);
                 } else {
                     let sumtxt = summer + JSON.stringify(historyLogic);
                     summer = await send_summer(sumtxt); 
+                    
                     userPromptLogic = "خلاصه چت:" + summer + " - " + "سوال الان کاربر" + useerRaw;
                     chats = 0;
                     botResponse = await ask_api(userPromptLogic);
+
                     historyLogic.push("کاربر: " + userPromptLogic);
                     historyLogic.push("ربات: " + botResponse);
                 }
 
                 await appendMessageUI('bot', botResponse, true);
                 saveState();
+
             } catch (error) {
                 console.error(error);
                 await appendMessageUI('bot', "مشکلی در دریافت پاسخ پیش آمد.", false);
@@ -434,98 +457,70 @@
             localStorage.setItem("theme", newTheme);
         }
 
-        // --- موتور جدید پردازش متن: Tokenizer ---
-        // این سیستم هیچ باگی نداره چون قبل از دستکاری مارک‌داون، فرمول‌ها رو فیزیکی از متن درمیاره!
-        function parseMarkdown(text, msgBox) {
-            if (!text) {
-                msgBox.innerHTML = "";
-                return;
-            }
+        // پردازش متنی پایدار و ساده بدون درگیری مستقیم با DOM
+        function parseMarkdown(text) {
+            if (!text) return "";
             text = String(text);
 
-            const tokens = [];
-            const tokenTypes = [];
+            // 1. ذخیره بلوک‌های کد برنامه‌نویسی
+            let codes = [];
+            text = text.replace(/```(?:[a-zA-Z0-9_+-]*\n)?([\s\S]*?)
+```/g, (match, code) => {
+                codes.push(code.trim());
+                return `__CODE_${codes.length - 1}__`;
+            });
 
-            // تابع ذخیره‌ساز (برش و انتقال به گاوصندوق)
-            function saveToken(match, type) {
-                tokens.push(match);
-                tokenTypes.push(type);
-                return `___SLOT_${tokens.length - 1}___`;
-            }
+            // 2. ذخیره کدهای درون‌خطی
+            let icodes = [];
+            text = text.replace(/`([^`]+)`/g, (match, code) => {
+                icodes.push(code);
+                return `__ICODE_${icodes.length - 1}__`;
+            });
 
-            // ۱. برش و محافظت از بلاک‌های کد برنامه‌نویسی
-            text = text.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)
-```/g, (m, lang, code) => saveToken({lang, code: code.trim()}, 'codeblock'));
-            text = text.replace(/```([\s\S]*?)```/g, (m, code) => saveToken({lang: '', code: code.trim()}, 'codeblock'));
-            text = text.replace(/`([^`\n]+)`/g, (m, code) => saveToken(code, 'inlinecode'));
+            // 3. ذخیره تمام فرمت‌های ریاضی استاندارد بدون خرابی
+            let maths = [];
+            const mathRegex = /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$]+\$|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/g;
+            text = text.replace(mathRegex, (match) => {
+                maths.push(match);
+                return `__MATH_${maths.length - 1}__`;
+            });
 
-            // ۲. برش و محافظت از فرمول‌های ریاضی بزرگ و چندخطی
-            text = text.replace(/\$\$[\s\S]*?\$\$/g, m => saveToken(m, 'math'));
-            text = text.replace(/\\\[[\s\S]*?\\\]/g, m => saveToken(m, 'math'));
-            text = text.replace(/\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\1\}/g, m => saveToken(m, 'math'));
-
-            // ۳. برش و محافظت از فرمول‌های خطی کوچیک (مثل $x+2$) بدون آسیب به متون عادی
-            text = text.replace(/\\\([\s\S]*?\\\)/g, m => saveToken(m, 'math'));
-            // این ریجکس جادویی، هر فرمولی که بین دوتا دلار باشه رو میگیره به شرطی که دلار اول به کلمه نچسبیده باشه (جلوگیری از باگ قیمت مثل 50$)
-            text = text.replace(/\$(?:[^\s$][^$]*?[^\s$]|[^\s$])\$/g, m => saveToken(m, 'math'));
-
-            // ۴. حالا که کدهای مهم تو گاوصندوق امن هستن، جلوی تزریق HTML رو می‌گیریم
+            // 4. تبدیل کاراکترهای حساس HTML به متون ایمن
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // ۵. اعمال بولد و ایتالیک (فقط روی متن‌های عادی)
-            text = text.replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>");
-            text = text.replace(/\*([^\s*][\s\S]*?[^\s*]|[^\s*])\*/g, "<em>$1</em>");
+            // 5. اعمال مارک‌داون (Bold و Italic) روی متن عادی
+            text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+            text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+            
+            // تبدیل Enter به خط جدید
+            text = text.replace(/\n/g, "<br>");
 
-            // ۶. تبدیل نشانگرهای گاوصندوق به خانه‌های خالی در HTML
-            text = text.replace(/___SLOT_(\d+)___/g, (m, idx) => {
-                const type = tokenTypes[idx];
-                if (type === 'math' || type === 'inlinecode') return `<span class="slot-${type}" data-idx="${idx}"></span>`;
-                if (type === 'codeblock') return `<div class="slot-${type}" data-idx="${idx}"></div>`;
-                return m;
+            // 6. بازگرداندن فرمول‌های ریاضی (ایمن‌سازی مجدد تگ‌های وب در دل فرمول)
+            text = text.replace(/__MATH_(\d+)__/g, (match, index) => {
+                let safeMath = maths[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return safeMath;
             });
 
-            msgBox.innerHTML = text;
-
-            // ۷. بازگرداندن بی‌نقص کدهای ریاضی و برنامه‌نویسی سر جای خودشون
-            msgBox.querySelectorAll('span[class^="slot-"]').forEach(el => {
-                const idx = el.getAttribute('data-idx');
-                const type = tokenTypes[idx];
-                const content = tokens[idx];
-
-                if (type === 'math') {
-                    // با استفاده از textContent، مرورگر اصلاً نمی‌فهمه این کده، فقط تحویل MathJax میده
-                    el.textContent = content; 
-                } else if (type === 'inlinecode') {
-                    el.className = 'inline-code';
-                    el.textContent = content;
-                }
+            // 7. بازگرداندن کدهای درون‌خطی
+            text = text.replace(/__ICODE_(\d+)__/g, (match, index) => {
+                let safeICode = icodes[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return `<span class="inline-code tex2jax_ignore">${safeICode}</span>`;
             });
 
-            // ساخت دکمه و باکس برای کدهای برنامه‌نویسی
-            msgBox.querySelectorAll('div.slot-codeblock').forEach(el => {
-                const idx = el.getAttribute('data-idx');
-                const { code } = tokens[idx];
-                
-                const uniqueId = 'code_' + Math.random().toString(36).substr(2, 9);
-                const header = document.createElement('div');
-                header.className = 'code-header';
-                
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'copy-btn';
-                copyBtn.textContent = 'کپی کد';
-                copyBtn.onclick = () => window.copyCodeText(uniqueId);
-                header.appendChild(copyBtn);
-
-                const pre = document.createElement('pre');
-                const codeEl = document.createElement('code');
-                codeEl.id = uniqueId;
-                codeEl.textContent = code;
-                
-                pre.appendChild(codeEl);
-                el.className = 'code-container';
-                el.appendChild(header);
-                el.appendChild(pre);
+            // 8. بازگرداندن بلوک‌های کد همراه با دکمه کپی
+            text = text.replace(/__CODE_(\d+)__/g, (match, index) => {
+                let safeCode = codes[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                let uniqueId = 'code_' + Math.random().toString(36).substr(2, 9);
+                return `<div class="code-container tex2jax_ignore">
+                            <div class="code-header">
+                                <button class="copy-btn" onclick="copyCodeText('${uniqueId}')">کپی کد</button>
+                            </div>
+                            <pre><code id="${uniqueId}">${safeCode}</code></pre>
+                        </div>`;
             });
+
+            // محصور کردن در تگ پردازش MathJax
+            return `<div class="tex2jax_process">${text}</div>`;
         }
 
         async function appendMessageUI(sender, text, shouldSave) {
@@ -535,18 +530,19 @@
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
-            parseMarkdown(text, msgBox);
+            // قرار دادن متن پردازش شده داخل پیام
+            msgBox.innerHTML = parseMarkdown(text);
             
             row.appendChild(msgBox);
             chatContainer.appendChild(row);
 
-            // صف‌بندی هوشمندانه MathJax برای جلوگیری از ارور تایپ‌ست
+            // اجرای MathJax
             if (window.MathJax && MathJax.typesetPromise) {
-                mathJaxQueue = mathJaxQueue.then(() => {
-                    return MathJax.typesetPromise([msgBox]);
-                }).catch(err => {
-                    console.warn('MathJax render error:', err);
-                });
+                try {
+                    await MathJax.typesetPromise([msgBox]);
+                } catch (err) {
+                    console.error('MathJax render error:', err);
+                }
             }
 
             if (shouldSave) {
