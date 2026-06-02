@@ -1,34 +1,120 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>DEBUG MODE - XMath</title>
-    <style>
-        body { background: #121212; color: #00ff00; font-family: monospace; padding: 20px; }
-        #raw-display { white-space: pre-wrap; border: 1px solid red; padding: 10px; margin-top: 10px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Gemini Math Renderer</title>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+
+<script defer src="tex-mml-chtml.js"></script>
+
+<style>
+@font-face {
+    font-family: 'ginkg';
+    src: url('x.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'ginkgo';
+    src: url('n.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'ginkgoo';
+    src: url('e.ttf') format('truetype');
+}
+
+body{
+    margin:0;
+    background:#0f0f0f;
+    color:white;
+    font-family:tahoma,sans-serif;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+textarea{
+    background:#1e1e1e;
+    color:white;
+    border:none;
+    border-radius:15px;
+    padding:0;
+    font-size:0px;
+    resize:none;
+    box-sizing:border-box;
+    width: 0;
+    height: 0;
+}
+
+
+.output{
+    margin-top:25px;
+    background:#1e1e1e;
+    border-radius:15px;
+    padding:20px;
+    line-height:2;
+    overflow-x:auto;
+    font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+    font-weight: 500;
+    font-variation-settings: 'ROND' 100;
+    font-style: normal;
+
+}
+</style>
 </head>
+
 <body>
-    <h3>داده‌ای که در حافظه پیدا شد:</h3>
-    <div id="raw-display"></div>
 
-    <script>
-        window.addEventListener('load', () => {
-            const rawData = localStorage.getItem('raw_math_data');
-            const display = document.getElementById('raw-display');
-            
-            console.log("--- START RAW DATA ---");
-            console.log(rawData);
-            console.log("--- END RAW DATA ---");
+<div class="container">
 
-            if (rawData) {
-                // نمایش مستقیم و بدون دستکاری
-                display.textContent = rawData; 
-                alert("داده لود شد! کنسول (F12) رو چک کن ببین $ ها هستند یا نه.");
-            } else {
-                display.textContent = "هیچ دیتایی در حافظه پیدا نشد!";
-            }
-        });
-    </script>
+
+<textarea id="input"
+placeholder="متن جمنای را اینجا Paste کن"></textarea>
+
+<div class="output" id="output"></div>
+
+</div>
+
+<script>
+// تابع رندر برای نمایش ریاضی
+function renderText(){
+    const text = document.getElementById("input").value;
+    // فقط برای نمایش متن توی div، از همین متنِ دیکد شده استفاده می‌کنه
+    document.getElementById("output").innerHTML = text.replace(/\n/g,"<br>");
+    MathJax.typesetPromise();
+}
+
+window.addEventListener('load', () => {
+    // ۱. گرفتن داده از حافظه
+    const encodedData = localStorage.getItem('raw_math_transfer');
+    
+    if (encodedData) {
+        // ۲. دیکد کردن به همون متنِ "خامِ خام" اولیه (معکوسِ Base64)
+        const decodedText = decodeURIComponent(escape(atob(encodedData)));
+        
+        // ۳. قرار دادنِ دقیق در اینپوت
+        const ta = document.getElementById('input');
+        ta.value = decodedText;
+        
+        // ۴. رندر کردن
+        renderText();
+        
+        // ۵. پاک کردن حافظه جهت تمیز ماندن سایت
+        localStorage.removeItem('raw_math_transfer');
+    }
+});
+</script>
+
 </body>
 </html>
