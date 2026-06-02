@@ -344,7 +344,7 @@
     <div class="main-chat">
         <div class="chat-container" id="chatContainer"></div>
 
-        <div class="loading" id="loadingIndicator">جمنای در حال پاسخ دادن است...</div>
+        <div class="loading" id="loadingIndicator">آیو درحال فکر کردن است...</div>
 
         <div class="input-wrapper">
             <div class="input-box">
@@ -392,7 +392,7 @@
                     "Authorization": `Bearer ${API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: "gpt-5-nano",
+                    model: "gpt-4o-mini",
                     input: utx
                 })
             });
