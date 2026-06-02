@@ -24,9 +24,21 @@
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
+        @font-face {
+            font-family: 'ginkg';
+            src: url('x.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'ginkgo';
+            src: url('n.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'ginkgoo';
+            src: url('e.ttf') format('truetype');
+        }
         :root {
-            --bg-color: #131314;
-            --sidebar-bg: #1e1f20;
+            --bg-color: #000;
+            --sidebar-bg: #131314;
             --text-color: #e3e3e3;
             --text-muted: #c4c7c5;
             --border-color: #444746;
@@ -50,7 +62,10 @@
 
         * {
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, Tahoma, sans-serif;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             transition: background-color 0.2s, color 0.2s;
         }
 
@@ -166,7 +181,10 @@
             background: var(--border-color);
             padding: 2px 6px;
             border-radius: 6px;
-            font-family: monospace;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             font-size: 0.95em;
             direction: ltr;
             display: inline-block;
@@ -204,7 +222,10 @@
             margin: 0;
             padding: 16px;
             overflow-x: auto;
-            font-family: monospace;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             font-size: 14px;
         }
 
@@ -422,7 +443,7 @@
                 let userPromptLogic = "";
 
                 if (chats < 4) {
-                    userPromptLogic = "پیام های قبلی شاید به همراه خلاصه چت باشه اما اگر خالی بود واکنشی نده" + summer + " | " + JSON.stringify(historyLogic) + "سوال الان کاربر" + useerRaw;
+                    userPromptLogic = "چند تا نکته که نباید بهشون واکنشی نشون بدی(تمام کد ها باید بین ``` قرار بگیرن و عبارات ریاضی هم بین $ بدون فاصله قرار بگیرن)" + "پیام های قبلی شاید به همراه خلاصه چت باشه اما اگر خالی بود واکنشی نده" + summer + " | " + JSON.stringify(historyLogic) + "سوال الان کاربر" + useerRaw;
                     chats += 1;
                     botResponse = await ask_api(userPromptLogic);
                     
@@ -432,7 +453,7 @@
                     let sumtxt = summer + JSON.stringify(historyLogic);
                     summer = await send_summer(sumtxt); 
                     
-                    userPromptLogic = "خلاصه چت:" + summer + " - " + "سوال الان کاربر" + useerRaw;
+                    userPromptLogic = "چند تا نکته که نباید بهشون واکنشی نشون بدی(تمام کد ها باید بین ``` قرار بگیرن و عبارات ریاضی هم بین $ بدون فاصله قرار بگیرن)" + "خلاصه چت:" + summer + " - " + "سوال الان کاربر" + useerRaw;
                     chats = 0;
                     botResponse = await ask_api(userPromptLogic);
 
