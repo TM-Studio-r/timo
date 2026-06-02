@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>GapGPT - Gemini UI</title>
+    <title>Aio</title>
 
     <script>
-    // پیکربندی پیشرفته MathJax برای رندر فوق‌العاده دقیق فرمول‌های پویا
+    // تنظیمات استاندارد و امن MathJax
     window.MathJax = {
       tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -14,6 +14,7 @@
         processEscapes: true
       },
       options: {
+        // اسپان‌ها رو نادیده نمی‌گیریم تا بتونیم فرمول‌ها رو با خیال راحت توشون تزریق کنیم
         skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
       },
       startup: {
@@ -64,7 +65,6 @@
             position: relative;
         }
 
-        /* دکمه منو سایدبار مخصوص موبایل */
         .menu-btn {
             display: none;
             position: absolute;
@@ -82,7 +82,6 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
-        /* لایه تیره پشت منو در موبایل */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -91,7 +90,6 @@
             z-index: 98;
         }
 
-        /* سایدبار ثابت در دسکتاپ و منعطف */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -161,6 +159,7 @@
         }
 
         strong { font-weight: bold; }
+        em { font-style: italic; }
         
         .inline-code {
             background: var(--border-color);
@@ -265,40 +264,23 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
 
-        /* ====== استایل‌های واکنش‌گرا و دکمه‌ای شدن سایدبار در گوشی ====== */
         @media (max-width: 768px) {
             .menu-btn { display: flex; }
             
             .sidebar {
                 position: fixed;
                 top: 0;
-                right: -280px; /* پنهان شدن پیش‌فرض در موبایل */
+                right: -280px; 
                 height: 100vh;
                 z-index: 99;
                 box-shadow: -5px 0 15px rgba(0,0,0,0.5);
             }
             
-            .sidebar.open {
-                right: 0; /* باز شدن کشویی منو در موبایل */
-            }
-            
-            .sidebar-overlay.show {
-                display: block;
-            }
-
-            .chat-container {
-                padding: 70px 15px 20px 15px;
-            }
-
-            .input-wrapper {
-                padding: 10px 10px 15px 10px;
-            }
-
-            .message {
-                max-width: 95%;
-                font-size: 14px;
-            }
-
+            .sidebar.open { right: 0; }
+            .sidebar-overlay.show { display: block; }
+            .chat-container { padding: 70px 15px 20px 15px; }
+            .input-wrapper { padding: 10px 10px 15px 10px; }
+            .message { max-width: 95%; font-size: 14px; }
             .user-msg { padding: 10px 18px; }
             .loading { padding: 5px 15px; }
         }
@@ -322,9 +304,7 @@
 
     <div class="main-chat">
         <div class="chat-container" id="chatContainer"></div>
-
         <div class="loading" id="loadingIndicator">جمنای در حال پاسخ دادن است...</div>
-
         <div class="input-wrapper">
             <div class="input-box">
                 <textarea id="userInput" placeholder="پیام خود را بنویسید..." rows="1" oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
@@ -343,6 +323,7 @@
         let summer = localStorage.getItem("bot_summer") || "";
         let chats = parseInt(localStorage.getItem("bot_chats")) || 0;
         let uiMessages = JSON.parse(localStorage.getItem("bot_ui")) || []; 
+        let mathJaxQueue = Promise.resolve(); // صف‌بندی ایمن برای جلوگیری از کرش کردن MathJax
 
         const chatContainer = document.getElementById("chatContainer");
         const userInputBox = document.getElementById("userInput");
@@ -366,19 +347,11 @@
         async function ask_api(utx) {
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-5-nano",
-                    input: utx
-                })
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+                body: JSON.stringify({ model: "gpt-5-nano", input: utx })
             });
-            
             if (!response.ok) throw new Error(`API Error: ${response.status}`);
             const data = await response.json();
-            
             if (data.output && Array.isArray(data.output)) {
                 const assistantMsg = data.output.find(item => item.role === 'assistant' || item.type === 'message');
                 if (assistantMsg && assistantMsg.content && assistantMsg.content.length > 0) {
@@ -393,14 +366,8 @@
             let ftx = "فقط و فقط این گفت و گو میان ربات و کاربر رو خلاصه میکنی و نکات مهم رو در میاری طوری که ربات دیگر متوجه تمام نکات چت بشه و فقط هم خلاصه رو برام میفرستی حتی یک حرف اضافه هم نگو." + text;
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gemini-2.5-flash-lite",
-                    input: ftx
-                })
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+                body: JSON.stringify({ model: "gemini-2.5-flash-lite", input: ftx })
             });
             const data = await response.json();
             return data.output_text || data.response || "";
@@ -425,24 +392,20 @@
                     userPromptLogic = "پیام های قبلی شاید به همراه خلاصه چت باشه اما اگر خالی بود واکنشی نده" + summer + " | " + JSON.stringify(historyLogic) + "سوال الان کاربر" + useerRaw;
                     chats += 1;
                     botResponse = await ask_api(userPromptLogic);
-                    
                     historyLogic.push("کاربر: " + userPromptLogic);
                     historyLogic.push("ربات: " + botResponse);
                 } else {
                     let sumtxt = summer + JSON.stringify(historyLogic);
                     summer = await send_summer(sumtxt); 
-                    
                     userPromptLogic = "خلاصه چت:" + summer + " - " + "سوال الان کاربر" + useerRaw;
                     chats = 0;
                     botResponse = await ask_api(userPromptLogic);
-
                     historyLogic.push("کاربر: " + userPromptLogic);
                     historyLogic.push("ربات: " + botResponse);
                 }
 
                 await appendMessageUI('bot', botResponse, true);
                 saveState();
-
             } catch (error) {
                 console.error(error);
                 await appendMessageUI('bot', "مشکلی در دریافت پاسخ پیش آمد.", false);
@@ -471,81 +434,97 @@
             localStorage.setItem("theme", newTheme);
         }
 
-        // شاهکار مهندسی پردازش متن: جداسازی با ساختار کاملاً امن TextNode
+        // --- موتور جدید پردازش متن: Tokenizer ---
+        // این سیستم هیچ باگی نداره چون قبل از دستکاری مارک‌داون، فرمول‌ها رو فیزیکی از متن درمیاره!
         function parseMarkdown(text, msgBox) {
-            if (typeof text !== 'string') text = String(text || "");
+            if (!text) {
+                msgBox.innerHTML = "";
+                return;
+            }
+            text = String(text);
 
-            // ۱. استخراج و قفل کردن بلاک‌های چندخطی کد برنامه‌نویسی
-            const codeBlocks = [];
-            text = text.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
-                codeBlocks.push(code.trim());
-                return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
-            });
-            text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
-                codeBlocks.push(code.trim());
-                return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
-            });
+            const tokens = [];
+            const tokenTypes = [];
 
-            // ۲. استخراج هوشمند تمام فرمت‌های ریاضی مدرن و کلاسیک ربات (حتی محفظه‌های بدون علامت \begin)
-            const mathBlocks = [];
-            // این ریجکس پیشرفته به هیچ عنوان اجازه خرابی یا جا افتادن فرمول‌ها و تداخل دلار با متن عادی را نمی‌دهد
-            text = text.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\( [\s\S]*? \\\)|\\\([\s\S]*?\\\)|\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\2\}|\$[^$\s\n]([^$\n]*? [^$\s\n])?\$|\$[^$\s\n]\$)/g, function(match) {
-                mathBlocks.push(match);
-                return `___MATH_BLOCK_SLOT_${mathBlocks.length - 1}___`;
-            });
+            // تابع ذخیره‌ساز (برش و انتقال به گاوصندوق)
+            function saveToken(match, type) {
+                tokens.push(match);
+                tokenTypes.push(type);
+                return `___SLOT_${tokens.length - 1}___`;
+            }
 
-            // ۳. امن‌سازی نشانه‌های تگ متون معمولی برای جلوگیری از تزریق ناخواسته HTML
+            // ۱. برش و محافظت از بلاک‌های کد برنامه‌نویسی
+            text = text.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)
+```/g, (m, lang, code) => saveToken({lang, code: code.trim()}, 'codeblock'));
+            text = text.replace(/```([\s\S]*?)```/g, (m, code) => saveToken({lang: '', code: code.trim()}, 'codeblock'));
+            text = text.replace(/`([^`\n]+)`/g, (m, code) => saveToken(code, 'inlinecode'));
+
+            // ۲. برش و محافظت از فرمول‌های ریاضی بزرگ و چندخطی
+            text = text.replace(/\$\$[\s\S]*?\$\$/g, m => saveToken(m, 'math'));
+            text = text.replace(/\\\[[\s\S]*?\\\]/g, m => saveToken(m, 'math'));
+            text = text.replace(/\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\1\}/g, m => saveToken(m, 'math'));
+
+            // ۳. برش و محافظت از فرمول‌های خطی کوچیک (مثل $x+2$) بدون آسیب به متون عادی
+            text = text.replace(/\\\([\s\S]*?\\\)/g, m => saveToken(m, 'math'));
+            // این ریجکس جادویی، هر فرمولی که بین دوتا دلار باشه رو میگیره به شرطی که دلار اول به کلمه نچسبیده باشه (جلوگیری از باگ قیمت مثل 50$)
+            text = text.replace(/\$(?:[^\s$][^$]*?[^\s$]|[^\s$])\$/g, m => saveToken(m, 'math'));
+
+            // ۴. حالا که کدهای مهم تو گاوصندوق امن هستن، جلوی تزریق HTML رو می‌گیریم
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // ۴. اعمال گرامر مارک‌داون استاندارد فقط روی بخش‌های متنی مجاز
-            text = text.replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>");
-            text = text.replace(/\*([\s\S]*?)\*/g, "<strong>$1</strong>");
-            text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
+            // ۵. اعمال بولد و ایتالیک (فقط روی متن‌های عادی)
+            text = text.replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>");
+            text = text.replace(/\*([^\s*][\s\S]*?[^\s*]|[^\s*])\*/g, "<em>$1</em>");
 
-            // ۵. تبدیل کدهای اسلات به نگهدارنده‌های خالی مشخص در ساختار DOM
-            text = text.replace(/___MATH_BLOCK_SLOT_(\d+)___/g, function(match, index) {
-                return `<span class="math-holder" data-index="${index}"></span>`;
+            // ۶. تبدیل نشانگرهای گاوصندوق به خانه‌های خالی در HTML
+            text = text.replace(/___SLOT_(\d+)___/g, (m, idx) => {
+                const type = tokenTypes[idx];
+                if (type === 'math' || type === 'inlinecode') return `<span class="slot-${type}" data-idx="${idx}"></span>`;
+                if (type === 'codeblock') return `<div class="slot-${type}" data-idx="${idx}"></div>`;
+                return m;
             });
 
-            text = text.replace(/___CODE_BLOCK_SLOT_(\d+)___/g, function(match, index) {
-                return `<div class="code-holder" data-index="${index}"></div>`;
-            });
-
-            // تزریق بدنه ساختار یافته به باکس پیام چت
             msgBox.innerHTML = text;
 
-            // ۶. تزریق فوق امن فرمول‌های ریاضی خام با textContent (بدون کوچکترین دستکاری یا تداخل کاراکترها)
-            msgBox.querySelectorAll('.math-holder').forEach(el => {
-                const idx = el.getAttribute('data-index');
-                if (mathBlocks[idx]) {
-                    el.textContent = mathBlocks[idx];
+            // ۷. بازگرداندن بی‌نقص کدهای ریاضی و برنامه‌نویسی سر جای خودشون
+            msgBox.querySelectorAll('span[class^="slot-"]').forEach(el => {
+                const idx = el.getAttribute('data-idx');
+                const type = tokenTypes[idx];
+                const content = tokens[idx];
+
+                if (type === 'math') {
+                    // با استفاده از textContent، مرورگر اصلاً نمی‌فهمه این کده، فقط تحویل MathJax میده
+                    el.textContent = content; 
+                } else if (type === 'inlinecode') {
+                    el.className = 'inline-code';
+                    el.textContent = content;
                 }
             });
 
-            // ۷. تزریق فوق امن متون کدهای برنامه‌نویسی به همراه دکمه کپی اختصاصی
-            msgBox.querySelectorAll('.code-holder').forEach(el => {
-                const idx = el.getAttribute('data-index');
-                if (codeBlocks[idx]) {
-                    const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
-                    
-                    const header = document.createElement('div');
-                    header.className = 'code-header';
-                    
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'copy-btn';
-                    copyBtn.textContent = 'کپی کد';
-                    copyBtn.onclick = () => window.copyCodeText(uniqueId);
-                    header.appendChild(copyBtn);
+            // ساخت دکمه و باکس برای کدهای برنامه‌نویسی
+            msgBox.querySelectorAll('div.slot-codeblock').forEach(el => {
+                const idx = el.getAttribute('data-idx');
+                const { code } = tokens[idx];
+                
+                const uniqueId = 'code_' + Math.random().toString(36).substr(2, 9);
+                const header = document.createElement('div');
+                header.className = 'code-header';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = 'کپی کد';
+                copyBtn.onclick = () => window.copyCodeText(uniqueId);
+                header.appendChild(copyBtn);
 
-                    const pre = document.createElement('pre');
-                    const codeEl = document.createElement('code');
-                    codeEl.id = uniqueId;
-                    codeEl.textContent = codeBlocks[idx]; // استفاده از textContent جهت حفاظت کامل از ساختار کد
-                    
-                    pre.appendChild(codeEl);
-                    el.appendChild(header);
-                    el.appendChild(pre);
-                }
+                const pre = document.createElement('pre');
+                const codeEl = document.createElement('code');
+                codeEl.id = uniqueId;
+                codeEl.textContent = code;
+                
+                pre.appendChild(codeEl);
+                el.className = 'code-container';
+                el.appendChild(header);
+                el.appendChild(pre);
             });
         }
 
@@ -556,19 +535,18 @@
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
-            // پردازش و مقداردهی داینامیک باکس پیام
             parseMarkdown(text, msgBox);
             
             row.appendChild(msgBox);
             chatContainer.appendChild(row);
 
-            // وادار کردن آنی MathJax جهت پردازش انحصاری و سریع همین تگ متولد شده
+            // صف‌بندی هوشمندانه MathJax برای جلوگیری از ارور تایپ‌ست
             if (window.MathJax && MathJax.typesetPromise) {
-                try {
-                    await MathJax.typesetPromise([msgBox]);
-                } catch (err) {
-                    console.warn('MathJax individual compilation skipped');
-                }
+                mathJaxQueue = mathJaxQueue.then(() => {
+                    return MathJax.typesetPromise([msgBox]);
+                }).catch(err => {
+                    console.warn('MathJax render error:', err);
+                });
             }
 
             if (shouldSave) {
