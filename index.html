@@ -6,63 +6,341 @@
     <title>GapGPT - Gemini UI</title>
 
     <script>
+    // پیکربندی پیشرفته MathJax برای رندر فوق‌العاده دقیق فرمول‌های پویا
     window.MathJax = {
-      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true },
-      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] },
-      startup: { typeset: false }
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      startup: {
+        typeset: false
+      }
     };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        :root { --bg-color: #131314; --sidebar-bg: #1e1f20; --text-color: #e3e3e3; --text-muted: #c4c7c5; --border-color: #444746; --user-bubble: #333537; --input-bg: #1e1f20; --btn-hover: #2a2b2c; }
-        [data-theme="light"] { --bg-color: #ffffff; --sidebar-bg: #f0f4f9; --text-color: #1f1f1f; --text-muted: #444746; --border-color: #e3e3e3; --user-bubble: #e1e3e1; --input-bg: #f0f4f9; --btn-hover: #e0e4e9; }
-        * { box-sizing: border-box; font-family: system-ui, -apple-system, Tahoma, sans-serif; }
-        body { margin: 0; height: 100vh; display: flex; background: var(--bg-color); color: var(--text-color); overflow: hidden; }
-        
-        /* دکمه‌های پیام ربات */
-        .msg-actions { display: flex; gap: 10px; margin-top: 8px; padding-right: 5px; }
-        .msg-actions button {
-            background: var(--btn-hover);
+        :root {
+            --bg-color: #131314;
+            --sidebar-bg: #1e1f20;
+            --text-color: #e3e3e3;
+            --text-muted: #c4c7c5;
+            --border-color: #444746;
+            --user-bubble: #333537;
+            --code-bg: #1e1f20;
+            --input-bg: #1e1f20;
+            --btn-hover: #2a2b2c;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #ffffff;
+            --sidebar-bg: #f0f4f9;
+            --text-color: #1f1f1f;
+            --text-muted: #444746;
+            --border-color: #e3e3e3;
+            --user-bubble: #e1e3e1;
+            --code-bg: #f0f4f9;
+            --input-bg: #f0f4f9;
+            --btn-hover: #e0e4e9;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, Tahoma, sans-serif;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            background: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* دکمه منو سایدبار مخصوص موبایل */
+        .menu-btn {
+            display: none;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 90;
+            background: var(--sidebar-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
-            padding: 4px 12px;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* لایه تیره پشت منو در موبایل */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 98;
+        }
+
+        /* سایدبار ثابت در دسکتاپ و منعطف */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-left: 1px solid var(--border-color);
+            transition: transform 0.3s ease, right 0.3s ease;
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover { background: var(--btn-hover); }
+        .btn-primary { background: var(--text-color); color: var(--bg-color); border: none; font-weight: bold; }
+
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            width: 100%;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 15%;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .message-row { display: flex; width: 100%; }
+        .user-row { justify-content: flex-start; }
+        .bot-row { justify-content: flex-start; }
+
+        .message {
+            max-width: 85%;
+            line-height: 1.8;
+            font-size: 15px;
+            white-space: pre-wrap; 
+            word-wrap: break-word;
+        }
+
+        .user-msg {
+            background: var(--user-bubble);
+            padding: 12px 24px;
+            border-radius: 24px;
+        }
+
+        .bot-msg {
+            padding: 10px 0;
+            width: 100%;
+        }
+
+        strong { font-weight: bold; }
+        
+        .inline-code {
+            background: var(--border-color);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.95em;
+            direction: ltr;
+            display: inline-block;
+        }
+
+        .code-container {
+            background: #0f0f0f;
+            color: #fff;
             border-radius: 12px;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 6px 16px;
+            background: #1e1e1e;
+            border-bottom: 1px solid #333;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: #aaa;
             cursor: pointer;
             font-size: 12px;
         }
-        .msg-actions button:hover { background: var(--border-color); }
+        .copy-btn:hover { color: #fff; }
 
-        /* بقیه استایل‌ها */
-        .sidebar { width: 260px; background: var(--sidebar-bg); padding: 20px; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid var(--border-color); }
-        .main-chat { flex: 1; display: flex; flex-direction: column; position: relative; }
-        .chat-container { flex: 1; overflow-y: auto; padding: 30px 15%; display: flex; flex-direction: column; gap: 25px; }
-        .message-row { display: flex; width: 100%; flex-direction: column; }
-        .message { max-width: 85%; line-height: 1.8; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; }
-        .user-msg { background: var(--user-bubble); padding: 12px 24px; border-radius: 24px; align-self: flex-end; }
-        .bot-msg { padding: 10px 0; align-self: flex-start; }
-        .input-wrapper { padding: 20px 15%; background: var(--bg-color); }
-        .input-box { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 30px; display: flex; align-items: flex-end; padding: 10px 20px; gap: 10px; }
-        textarea { flex: 1; background: transparent; border: none; color: var(--text-color); font-size: 16px; resize: none; max-height: 180px; outline: none; }
-        .send-btn { background: transparent; border: none; cursor: pointer; padding: 8px; }
-        .send-btn svg { fill: var(--text-color); width: 24px; height: 24px; }
-        
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .chat-container { padding: 20px 15px; }
-            .input-wrapper { padding: 10px; }
+        pre {
+            margin: 0;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 14px;
         }
+
+        .input-wrapper {
+            padding: 20px 15%;
+            background: var(--bg-color);
+        }
+
+        .input-box {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px 20px;
+            gap: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-size: 16px;
+            resize: none;
+            max-height: 180px;
+            min-height: 28px;
+            outline: none;
+            line-height: 1.6;
+        }
+
+        .send-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-btn svg {
+            fill: var(--text-color);
+            width: 24px;
+            height: 24px;
+        }
+
+        .loading {
+            display: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            padding: 5px 15%;
+            font-style: italic;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+
+        /* ====== استایل‌های واکنش‌گرا و دکمه‌ای شدن سایدبار در گوشی ====== */
+        @media (max-width: 768px) {
+            .menu-btn { display: flex; }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                right: -280px; /* پنهان شدن پیش‌فرض در موبایل */
+                height: 100vh;
+                z-index: 99;
+                box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            }
+            
+            .sidebar.open {
+                right: 0; /* باز شدن کشویی منو در موبایل */
+            }
+            
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .chat-container {
+                padding: 70px 15px 20px 15px;
+            }
+
+            .input-wrapper {
+                padding: 10px 10px 15px 10px;
+            }
+
+            .message {
+                max-width: 95%;
+                font-size: 14px;
+            }
+
+            .user-msg { padding: 10px 18px; }
+            .loading { padding: 5px 15px; }
+        }
+        .bot-actions {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+                padding-top: 5px;
+            }
+            .action-btn {
+                background: transparent;
+                border: 1px solid var(--border-color);
+                color: var(--text-muted);
+                padding: 5px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 12px;
+            }
+            .action-btn:hover { background: var(--btn-hover); color: var(--text-color); }        
     </style>
 </head>
 <body data-theme="dark">
 
-    <div class="sidebar">
-        <button class="btn" onclick="newChat()">چت جدید</button>
-        <button class="btn" onclick="toggleTheme()">تغییر تم</button>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <button class="menu-btn" onclick="toggleSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+
+    <div class="sidebar" id="sidebar">
+        <button class="btn btn-primary" onclick="newChat()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            چت جدید
+        </button>
+        <button class="btn" onclick="toggleTheme()">تغییر تم 🌓</button>
     </div>
 
     <div class="main-chat">
         <div class="chat-container" id="chatContainer"></div>
+
+        <div class="loading" id="loadingIndicator">جمنای در حال پاسخ دادن است...</div>
+
         <div class="input-wrapper">
             <div class="input-box">
                 <textarea id="userInput" placeholder="پیام خود را بنویسید..." rows="1" oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
@@ -74,93 +352,289 @@
     </div>
 
     <script>
-        // دکمه‌های کنترلی
-        window.copyRaw = function(btn) {
-            const rawText = btn.parentElement.dataset.content;
-            navigator.clipboard.writeText(rawText);
-            const originalText = btn.innerText;
-            btn.innerText = "کپی شد!";
-            setTimeout(() => btn.innerText = originalText, 1500);
-        }
-
-        window.openMath = function(btn) {
-            const rawText = btn.parentElement.dataset.content;
-            const url = `nit5.html?action=process&value=${encodeURIComponent(rawText)}`;
-            window.open(url, '_blank');
-        }
-
-        // توابع اصلی
-        async function appendMessageUI(sender, text, shouldSave) {
-            const row = document.createElement("div");
-            row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
-            
-            const msgBox = document.createElement("div");
-            msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
-            
-            // پردازش مارک‌داون
-            parseMarkdown(text, msgBox);
-            row.appendChild(msgBox);
-
-            // اضافه کردن دکمه‌ها فقط برای ربات
-            if (sender === 'bot') {
-                const actions = document.createElement("div");
-                actions.className = "msg-actions";
-                actions.dataset.content = text; // ذخیره متن خام اینجا
-                actions.innerHTML = `
-                    <button onclick="copyRaw(this)">کپی</button>
-                    <button onclick="openMath(this)">🧮 ریاضیات</button>
-                `;
-                row.appendChild(actions);
-            }
-            
-            chatContainer.appendChild(row);
-
-            if (window.MathJax && MathJax.typesetPromise) {
-                try { await MathJax.typesetPromise([msgBox]); } catch (e) {}
-            }
-
-            if (shouldSave) { saveState(sender, text); }
-            scrollToBottom();
-        }
-
-        // [بقیه توابع قبلی رو اینجا حفظ کن...]
         const API_KEY = "sk-dhlboXx229zWJrpnc9EAr3fr52UrsXOk85ZevwXfalwkRSNd";
         const API_URL = "https://api.gapgpt.app/v1/responses"; 
+
         let historyLogic = JSON.parse(localStorage.getItem("bot_history")) || [];
         let summer = localStorage.getItem("bot_summer") || "";
         let chats = parseInt(localStorage.getItem("bot_chats")) || 0;
         let uiMessages = JSON.parse(localStorage.getItem("bot_ui")) || []; 
 
+        const chatContainer = document.getElementById("chatContainer");
+        const userInputBox = document.getElementById("userInput");
+        const loadingBox = document.getElementById("loadingIndicator");
+
         window.onload = async () => {
-            for (let msg of uiMessages) { await appendMessageUI(msg.sender, msg.content, false); }
+            if (localStorage.getItem("theme")) {
+                document.body.setAttribute("data-theme", localStorage.getItem("theme"));
+            }
+            for (let msg of uiMessages) {
+                await appendMessageUI(msg.sender, msg.content, false);
+            }
+            scrollToBottom();
         };
 
-        window.sendMessage = async function() {
-            let userRaw = document.getElementById("userInput").value.trim();
-            if (!userRaw) return;
-            await appendMessageUI('user', userRaw, true);
-            document.getElementById("userInput").value = "";
-            
-            try {
-                // این بخش همان منطق قبلی توست که API صدا میزنه
-                const botResponse = "مثال: $x^2 + y^2 = z^2$"; // اینجا پاسخ API میاد
-                await appendMessageUI('bot', botResponse, true);
-            } catch(e) {}
-        };
-
-        function parseMarkdown(text, msgBox) {
-            // منطق پارسر تو که قبلا داشتیم
-            msgBox.innerText = text; // ساده‌سازی برای نمایش
+        window.toggleSidebar = function() {
+            document.getElementById("sidebar").classList.toggle("open");
+            document.getElementById("sidebarOverlay").classList.toggle("show");
         }
 
-        function saveState(sender, content) {
-            uiMessages.push({sender, content});
+        async function ask_api(utx) {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-5-nano",
+                    input: utx
+                })
+            });
+            
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            const data = await response.json();
+            
+            if (data.output && Array.isArray(data.output)) {
+                const assistantMsg = data.output.find(item => item.role === 'assistant' || item.type === 'message');
+                if (assistantMsg && assistantMsg.content && assistantMsg.content.length > 0) {
+                    let contentNode = assistantMsg.content[0];
+                    return contentNode.text || contentNode.value || contentNode;
+                }
+            }
+            return data.output_text || data.response || "پاسخی دریافت نشد.";
+        }
+
+        async function send_summer(text) {
+            let ftx = "فقط و فقط این گفت و گو میان ربات و کاربر رو خلاصه میکنی و نکات مهم رو در میاری طوری که ربات دیگر متوجه تمام نکات چت بشه و فقط هم خلاصه رو برام میفرستی حتی یک حرف اضافه هم نگو." + text;
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "gemini-2.5-flash-lite",
+                    input: ftx
+                })
+            });
+            const data = await response.json();
+            return data.output_text || data.response || "";
+        }
+
+        window.sendMessage = async function() {
+            let useerRaw = userInputBox.value.trim();
+            if (!useerRaw) return;
+
+            await appendMessageUI('user', useerRaw, true);
+            userInputBox.value = "";
+            userInputBox.style.height = 'auto'; 
+            
+            loadingBox.style.display = "block";
+            scrollToBottom();
+
+            try {
+                let botResponse = "";
+                let userPromptLogic = "";
+
+                if (chats < 4) {
+                    userPromptLogic = "پیام های قبلی شاید به همراه خلاصه چت باشه اما اگر خالی بود واکنشی نده" + summer + " | " + JSON.stringify(historyLogic) + "سوال الان کاربر" + useerRaw;
+                    chats += 1;
+                    botResponse = await ask_api(userPromptLogic);
+                    
+                    historyLogic.push("کاربر: " + userPromptLogic);
+                    historyLogic.push("ربات: " + botResponse);
+                } else {
+                    let sumtxt = summer + JSON.stringify(historyLogic);
+                    summer = await send_summer(sumtxt); 
+                    
+                    userPromptLogic = "خلاصه چت:" + summer + " - " + "سوال الان کاربر" + useerRaw;
+                    chats = 0;
+                    botResponse = await ask_api(userPromptLogic);
+
+                    historyLogic.push("کاربر: " + userPromptLogic);
+                    historyLogic.push("ربات: " + botResponse);
+                }
+
+                await appendMessageUI('bot', botResponse, true);
+                saveState();
+
+            } catch (error) {
+                console.error(error);
+                await appendMessageUI('bot', "مشکلی در دریافت پاسخ پیش آمد.", false);
+            } finally {
+                loadingBox.style.display = "none";
+                scrollToBottom();
+            }
+        };
+
+        function saveState() {
+            localStorage.setItem("bot_history", JSON.stringify(historyLogic));
+            localStorage.setItem("bot_summer", summer);
+            localStorage.setItem("bot_chats", chats.toString());
             localStorage.setItem("bot_ui", JSON.stringify(uiMessages));
         }
 
-        window.autoResize = function(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; }
-        function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
-        window.newChat = function() { localStorage.clear(); location.reload(); }
+        window.newChat = function() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        window.toggleTheme = function() {
+            const body = document.body;
+            const newTheme = body.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            body.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+        }
+
+        // شاهکار مهندسی پردازش متن: جداسازی با ساختار کاملاً امن TextNode
+        function parseMarkdown(text, msgBox) {
+            if (typeof text !== 'string') text = String(text || "");
+
+            // ۱. استخراج و قفل کردن بلاک‌های چندخطی کد برنامه‌نویسی
+            const codeBlocks = [];
+            text = text.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
+                codeBlocks.push(code.trim());
+                return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
+            });
+            text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
+                codeBlocks.push(code.trim());
+                return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
+            });
+
+            // ۲. استخراج هوشمند تمام فرمت‌های ریاضی مدرن و کلاسیک ربات (حتی محفظه‌های بدون علامت \begin)
+            const mathBlocks = [];
+            // این ریجکس پیشرفته به هیچ عنوان اجازه خرابی یا جا افتادن فرمول‌ها و تداخل دلار با متن عادی را نمی‌دهد
+            text = text.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\( [\s\S]*? \\\)|\\\([\s\S]*?\\\)|\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\2\}|\$[^$\s\n]([^$\n]*? [^$\s\n])?\$|\$[^$\s\n]\$)/g, function(match) {
+                mathBlocks.push(match);
+                return `___MATH_BLOCK_SLOT_${mathBlocks.length - 1}___`;
+            });
+
+            // ۳. امن‌سازی نشانه‌های تگ متون معمولی برای جلوگیری از تزریق ناخواسته HTML
+            text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // ۴. اعمال گرامر مارک‌داون استاندارد فقط روی بخش‌های متنی مجاز
+            text = text.replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>");
+            text = text.replace(/\*([\s\S]*?)\*/g, "<strong>$1</strong>");
+            text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
+
+            // ۵. تبدیل کدهای اسلات به نگهدارنده‌های خالی مشخص در ساختار DOM
+            text = text.replace(/___MATH_BLOCK_SLOT_(\d+)___/g, function(match, index) {
+                return `<span class="math-holder" data-index="${index}"></span>`;
+            });
+
+            text = text.replace(/___CODE_BLOCK_SLOT_(\d+)___/g, function(match, index) {
+                return `<div class="code-holder" data-index="${index}"></div>`;
+            });
+
+            // تزریق بدنه ساختار یافته به باکس پیام چت
+            msgBox.innerHTML = text;
+
+            // ۶. تزریق فوق امن فرمول‌های ریاضی خام با textContent (بدون کوچکترین دستکاری یا تداخل کاراکترها)
+            msgBox.querySelectorAll('.math-holder').forEach(el => {
+                const idx = el.getAttribute('data-index');
+                if (mathBlocks[idx]) {
+                    el.textContent = mathBlocks[idx];
+                }
+            });
+
+            // ۷. تزریق فوق امن متون کدهای برنامه‌نویسی به همراه دکمه کپی اختصاصی
+            msgBox.querySelectorAll('.code-holder').forEach(el => {
+                const idx = el.getAttribute('data-index');
+                if (codeBlocks[idx]) {
+                    const uniqueId = 'code_id_' + Math.random().toString(36).substr(2, 9);
+                    
+                    const header = document.createElement('div');
+                    header.className = 'code-header';
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = 'کپی کد';
+                    copyBtn.onclick = () => window.copyCodeText(uniqueId);
+                    header.appendChild(copyBtn);
+
+                    const pre = document.createElement('pre');
+                    const codeEl = document.createElement('code');
+                    codeEl.id = uniqueId;
+                    codeEl.textContent = codeBlocks[idx]; // استفاده از textContent جهت حفاظت کامل از ساختار کد
+                    
+                    pre.appendChild(codeEl);
+                    el.appendChild(header);
+                    el.appendChild(pre);
+                }
+            });
+        }
+
+        function appendMessageUI(sender, text, shouldSave) {
+                const row = document.createElement("div");
+                row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
+                
+                const msgBox = document.createElement("div");
+                msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
+                
+                // همان روش قبلی شما برای نمایش پیام
+                msgBox.innerHTML = parseMarkdown(text);
+                row.appendChild(msgBox);
+        
+                // افزودن دکمه‌ها فقط برای پیام‌های ربات
+                if (sender === 'bot') {
+                    const actionsDiv = document.createElement("div");
+                    actionsDiv.className = "bot-actions";
+        
+                    // دکمه کپی
+                    const copyBtn = document.createElement("button");
+                    copyBtn.className = "action-btn";
+                    copyBtn.textContent = "📋 کپی متن";
+                    copyBtn.onclick = () => {
+                        navigator.clipboard.writeText(text);
+                        alert("پیام کپی شد!");
+                    };
+        
+                    // دکمه ریاضی
+                    const mathBtn = document.createElement("button");
+                    mathBtn.className = "action-btn";
+                    mathBtn.textContent = "🧮 پردازش ریاضی";
+                    mathBtn.onclick = () => {
+                        const encodedQuery = encodeURIComponent(text);
+                        window.open(`nit5.html?action=process&value=${encodedQuery}`, '_blank');
+                    };
+        
+                    actionsDiv.appendChild(copyBtn);
+                    actionsDiv.appendChild(mathBtn);
+                    row.appendChild(actionsDiv);
+                }
+                
+                chatContainer.appendChild(row);
+        
+                if (shouldSave) {
+                    uiMessages.push({ sender: sender, content: text });
+                    saveState();
+                }
+                scrollToBottom();
+            }
+
+        window.copyCodeText = function(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("کد با موفقیت کپی شد!");
+            });
+        }
+
+        window.autoResize = function(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
+
+        window.handleEnter = function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     </script>
 </body>
 </html>
