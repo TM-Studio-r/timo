@@ -564,28 +564,37 @@
                 }
             });
         }
-
+        
         async function appendMessageUI(sender, text, shouldSave) {
             const row = document.createElement("div");
             row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
             
+            // لایه اصلی که پیام و دکمه‌ها در آن قرار می‌گیرند
+            const messageWrapper = document.createElement("div");
+            messageWrapper.style.display = "flex";
+            messageWrapper.style.flexDirection = "column";
+            messageWrapper.style.maxWidth = "85%";
+            
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
-            // چون در نسخه قبلی parseMarkdown را async کردیم، اینجا حتما باید await کنیم
-            // اگر از نسخه قبل که MathJax حرفه‌ای داشت استفاده می‌کنی، این خط درست است:
-            parseMarkdown(text, msgBox); 
-            
-            row.appendChild(msgBox);
+            // پردازش پیام
+            msgBox.innerHTML = parseMarkdown(text);
+            messageWrapper.appendChild(msgBox);
         
-            // افزودن دکمه‌ها فقط برای پیام‌های ربات
+            // افزودن دکمه‌ها فقط برای ربات (زیر پیام)
             if (sender === 'bot') {
                 const actionsDiv = document.createElement("div");
                 actionsDiv.className = "bot-actions";
+                actionsDiv.style.display = "flex";
+                actionsDiv.style.gap = "8px";
+                actionsDiv.style.marginTop = "5px";
         
                 const copyBtn = document.createElement("button");
                 copyBtn.className = "action-btn";
-                copyBtn.textContent = "📋 کپی متن";
+                copyBtn.style.padding = "2px 8px";
+                copyBtn.style.fontSize = "11px";
+                copyBtn.textContent = "📋 کپی";
                 copyBtn.onclick = () => {
                     navigator.clipboard.writeText(text);
                     alert("پیام کپی شد!");
@@ -593,7 +602,9 @@
         
                 const mathBtn = document.createElement("button");
                 mathBtn.className = "action-btn";
-                mathBtn.textContent = "🧮 پردازش ریاضی";
+                mathBtn.style.padding = "2px 8px";
+                mathBtn.style.fontSize = "11px";
+                mathBtn.textContent = "🧮 ریاضی";
                 mathBtn.onclick = () => {
                     const encodedQuery = encodeURIComponent(text);
                     window.open(`nit5.html?action=process&value=${encodedQuery}`, '_blank');
@@ -601,12 +612,13 @@
         
                 actionsDiv.appendChild(copyBtn);
                 actionsDiv.appendChild(mathBtn);
-                row.appendChild(actionsDiv);
+                messageWrapper.appendChild(actionsDiv);
             }
             
+            row.appendChild(messageWrapper);
             chatContainer.appendChild(row);
         
-            // وادار کردن MathJax به رندر کردن پیام جدید
+            // رندر ریاضیات
             if (window.MathJax && MathJax.typesetPromise) {
                 await MathJax.typesetPromise([msgBox]).catch(() => {});
             }
