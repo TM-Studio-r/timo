@@ -572,14 +572,14 @@
                     alert("پیام کاملاً خام کپی شد!");
                 };
         
+
                 const mathBtn = document.createElement("button");
                 mathBtn.className = "action-btn";
-                mathBtn.textContent = "🧮 ریاضی";
+                mathBtn.textContent = "🧮 ریاضی رو درست نمایش بده";
                 mathBtn.style.fontSize = "11px";
                 mathBtn.onclick = () => {
-                    // تبدیل استاندارد URL، و بازگرداندن علامت %24 به خود $ برای نمایش مستقیم تو آدرس‌بار!
-                    const rawEncoded = encodeURIComponent(absoluteRawText).replace(/%24/g, '$');
-                    window.open(`xmath.html?action=process&value=${rawEncoded}`, '_blank');
+                    localStorage.setItem('raw_math_data', text);
+                    window.open('xmath.html', '_blank');
                 };
         
                 actionsDiv.appendChild(copyBtn);
