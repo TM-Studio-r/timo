@@ -19,6 +19,7 @@
             src: url('e.ttf') format('truetype');
         }
 
+        /* اعمال فونت روی کل بدنه سایت */
         :root {
             --bg-color: #0f0f0f;
             --sidebar-bg: #131314;
@@ -56,6 +57,10 @@
             margin: 0;
             height: 100vh;
             display: flex;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             background: var(--bg-color);
             color: var(--text-color);
             overflow: hidden;
@@ -166,8 +171,8 @@
             font-variation-settings: 'ROND' 100;
             font-style: normal;
             font-size: 0.95em;
-            direction: ltr;
             display: inline-block;
+            direction: ltr;
             text-align: left;             
         }
 
@@ -279,6 +284,7 @@
 
         @media (max-width: 768px) {
             .menu-btn { display: flex; }
+            
             .sidebar {
                 position: fixed;
                 top: 0;
@@ -287,14 +293,17 @@
                 z-index: 99;
                 box-shadow: -5px 0 15px rgba(0,0,0,0.5);
             }
+            
             .sidebar.open { right: 0; }
             .sidebar-overlay.show { display: block; }
+
             .chat-container { padding: 70px 15px 20px 15px; }
             .input-wrapper { padding: 10px 10px 15px 10px; }
             .message { max-width: 95%; font-size: 14px; }
             .user-msg { padding: 10px 18px; }
             .loading { padding: 5px 15px; }
         }
+        
         .bot-actions {
             display: flex;
             gap: 10px;
@@ -483,6 +492,7 @@
         function parseMarkdown(text, msgBox) {
             if (typeof text !== 'string') text = String(text || "");
 
+            // ۱. قفل کردن کدهای برنامه‌نویسی
             const codeBlocks = [];
             text = text.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
                 codeBlocks.push(code.trim());
@@ -493,18 +503,34 @@
                 return `___CODE_BLOCK_SLOT_${codeBlocks.length - 1}___`;
             });
 
+            // ۲. قفل کردن ریاضیات خام تا کدهای استایل‌دهی (مارک‌داون) توش تداخل ایجاد نکنند
+            const mathBlocks = [];
+            text = text.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\( [\s\S]*? \\\)|\\\([\s\S]*?\\\)|\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\2\}|\$[^$\s\n]([^$\n]*? [^$\s\n])?\$|\$[^$\s\n]\$)/g, function(match) {
+                mathBlocks.push(match);
+                return `___MATH_BLOCK_SLOT_${mathBlocks.length - 1}___`;
+            });
+
+            // ۳. امن‌سازی HTML
             text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+            // ۴. استایل‌دهی مارک‌داون‌های معمولی (بولد و...)
             text = text.replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>");
             text = text.replace(/\*([\s\S]*?)\*/g, "<strong>$1</strong>");
             text = text.replace(/`([^`]+)`/g, "<span class='inline-code'>$1</span>");
 
+            // ۵. بازگرداندن ریاضیات خام دقیقاً همونطور که از سرور اومده (با تمام $ ها و تگ‌های اولیه‌اش)
+            text = text.replace(/___MATH_BLOCK_SLOT_(\d+)___/g, function(match, index) {
+                return mathBlocks[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            });
+
+            // ۶. آماده‌سازی اسلات کدهای برنامه‌نویسی
             text = text.replace(/___CODE_BLOCK_SLOT_(\d+)___/g, function(match, index) {
                 return `<div class="code-holder" data-index="${index}"></div>`;
             });
 
             msgBox.innerHTML = text;
 
+            // ۷. تزریق کدهای برنامه‌نویسی خام
             msgBox.querySelectorAll('.code-holder').forEach(el => {
                 const idx = el.getAttribute('data-index');
                 if (codeBlocks[idx]) {
@@ -586,6 +612,7 @@
             }
             scrollToBottom();
         }
+
         window.copyCodeText = function(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text).then(() => {
