@@ -535,26 +535,26 @@
         
         async function appendMessageUI(sender, text, shouldSave) {
             // متغیر text اینجا دقیقاً همون رشته‌ی ۱۰۰٪ خام و دست‌نخورده از سرور هست
-            const absoluteRawText = text;
-
+            const displayData = text; 
+            const rawDataForMath = text; 
+        
             const row = document.createElement("div");
             row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
             
-            const columnWrapper = document.createElement("div");
-            columnWrapper.style.display = "flex";
-            columnWrapper.style.flexDirection = "column";
-            columnWrapper.style.width = "100%";
-            
+            // ... بقیه کدهای ساخت UI (columnWrapper و...) ...
+        
             const msgBox = document.createElement("div");
             msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
             
-            parseMarkdown(text, msgBox);
+            // رندر کردن نسخه نمایشی (displayData)
+            parseMarkdown(displayData, msgBox);
             
             columnWrapper.appendChild(msgBox);
         
             if (sender === 'bot') {
-                // چاپ متن خام تو کنسول واسه اینکه با چشمای خودت ببینی هیچی ازش کم نشده
-                console.log("متن خام دریافت شده از سرور:", absoluteRawText);
+                const mathBtn = document.createElement("button");
+                
+                console.log("متن خام دریافت شده از سرور:", displayData);
 
                 const actionsDiv = document.createElement("div");
                 actionsDiv.className = "bot-actions";
@@ -568,24 +568,24 @@
                 copyBtn.style.fontSize = "11px";
                 copyBtn.onclick = () => {
                     // ارسال متن خام به کلیپ‌بورد
-                    navigator.clipboard.writeText(absoluteRawText);
+                    navigator.clipboard.writeText(displayData);
                     alert("پیام کاملاً خام کپی شد!");
-                };
-        
-
-                const mathBtn = document.createElement("button");
+                };                
                 mathBtn.className = "action-btn";
-                mathBtn.textContent = "🧮 ریاضی رو درست نمایش بده";
+                mathBtn.textContent = "🧮 ریاضی";
                 mathBtn.style.fontSize = "11px";
                 mathBtn.onclick = () => {
-                    localStorage.setItem('raw_math_data', text);
+                    // استفاده از rawDataForMath (دقیقاً همون پیام خام API)
+                    // تبدیل به Base64 امن
+                    const encoded = btoa(unescape(encodeURIComponent(rawDataForMath)));
+                    localStorage.setItem('raw_math_transfer', encoded);
                     window.open('xmath.html', '_blank');
                 };
-        
                 actionsDiv.appendChild(copyBtn);
                 actionsDiv.appendChild(mathBtn);
-                columnWrapper.appendChild(actionsDiv);
+                columnWrapper.appendChild(actionsDiv);                
             }
+
             
             row.appendChild(columnWrapper);
             chatContainer.appendChild(row);
@@ -597,6 +597,44 @@
             scrollToBottom();
         }
 
+async function appendMessageUI(sender, text, shouldSave) {
+    // ۱. ایجاد دو متغیر مجزا
+    // متغیر displayData: این چیزیه که سایت تو پردازش می‌کنه
+    // متغیر rawDataForMath: این چیزیه که دست‌نخورده می‌مونه برای ریاضیات و کپی
+    const displayData = text; 
+    const rawDataForMath = text; 
+
+    const row = document.createElement("div");
+    row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
+    
+    // ... بقیه کدهای ساخت UI (columnWrapper و...) ...
+
+    const msgBox = document.createElement("div");
+    msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
+    
+    // رندر کردن نسخه نمایشی (displayData)
+    parseMarkdown(displayData, msgBox);
+    
+    columnWrapper.appendChild(msgBox);
+
+    if (sender === 'bot') {
+        // ... (بخش کپی و ریاضی) ...
+        
+        const mathBtn = document.createElement("button");
+        mathBtn.className = "action-btn";
+        mathBtn.textContent = "🧮 ریاضی";
+        mathBtn.style.fontSize = "11px";
+        mathBtn.onclick = () => {
+            // استفاده از rawDataForMath (دقیقاً همون پیام خام API)
+            // تبدیل به Base64 امن
+            const encoded = btoa(unescape(encodeURIComponent(rawDataForMath)));
+            localStorage.setItem('raw_math_transfer', encoded);
+            window.open('xmath.html', '_blank');
+        };
+    }
+    
+    // ...
+}        
         window.copyCodeText = function(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text).then(() => {
