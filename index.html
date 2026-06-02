@@ -565,54 +565,58 @@
             });
         }
 
-        function appendMessageUI(sender, text, shouldSave) {
-                const row = document.createElement("div");
-                row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
-                
-                const msgBox = document.createElement("div");
-                msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
-                
-                // همان روش قبلی شما برای نمایش پیام
-                msgBox.innerHTML = parseMarkdown(text);
-                row.appendChild(msgBox);
+        async function appendMessageUI(sender, text, shouldSave) {
+            const row = document.createElement("div");
+            row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
+            
+            const msgBox = document.createElement("div");
+            msgBox.className = `message ${sender === 'user' ? 'user-msg' : 'bot-msg'}`;
+            
+            // چون در نسخه قبلی parseMarkdown را async کردیم، اینجا حتما باید await کنیم
+            // اگر از نسخه قبل که MathJax حرفه‌ای داشت استفاده می‌کنی، این خط درست است:
+            parseMarkdown(text, msgBox); 
+            
+            row.appendChild(msgBox);
         
-                // افزودن دکمه‌ها فقط برای پیام‌های ربات
-                if (sender === 'bot') {
-                    const actionsDiv = document.createElement("div");
-                    actionsDiv.className = "bot-actions";
+            // افزودن دکمه‌ها فقط برای پیام‌های ربات
+            if (sender === 'bot') {
+                const actionsDiv = document.createElement("div");
+                actionsDiv.className = "bot-actions";
         
-                    // دکمه کپی
-                    const copyBtn = document.createElement("button");
-                    copyBtn.className = "action-btn";
-                    copyBtn.textContent = "📋 کپی متن";
-                    copyBtn.onclick = () => {
-                        navigator.clipboard.writeText(text);
-                        alert("پیام کپی شد!");
-                    };
+                const copyBtn = document.createElement("button");
+                copyBtn.className = "action-btn";
+                copyBtn.textContent = "📋 کپی متن";
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(text);
+                    alert("پیام کپی شد!");
+                };
         
-                    // دکمه ریاضی
-                    const mathBtn = document.createElement("button");
-                    mathBtn.className = "action-btn";
-                    mathBtn.textContent = "🧮 پردازش ریاضی";
-                    mathBtn.onclick = () => {
-                        const encodedQuery = encodeURIComponent(text);
-                        window.open(`nit5.html?action=process&value=${encodedQuery}`, '_blank');
-                    };
+                const mathBtn = document.createElement("button");
+                mathBtn.className = "action-btn";
+                mathBtn.textContent = "🧮 پردازش ریاضی";
+                mathBtn.onclick = () => {
+                    const encodedQuery = encodeURIComponent(text);
+                    window.open(`nit5.html?action=process&value=${encodedQuery}`, '_blank');
+                };
         
-                    actionsDiv.appendChild(copyBtn);
-                    actionsDiv.appendChild(mathBtn);
-                    row.appendChild(actionsDiv);
-                }
-                
-                chatContainer.appendChild(row);
-        
-                if (shouldSave) {
-                    uiMessages.push({ sender: sender, content: text });
-                    saveState();
-                }
-                scrollToBottom();
+                actionsDiv.appendChild(copyBtn);
+                actionsDiv.appendChild(mathBtn);
+                row.appendChild(actionsDiv);
             }
-
+            
+            chatContainer.appendChild(row);
+        
+            // وادار کردن MathJax به رندر کردن پیام جدید
+            if (window.MathJax && MathJax.typesetPromise) {
+                await MathJax.typesetPromise([msgBox]).catch(() => {});
+            }
+        
+            if (shouldSave) {
+                uiMessages.push({ sender: sender, content: text });
+                saveState();
+            }
+            scrollToBottom();
+        }
         window.copyCodeText = function(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text).then(() => {
