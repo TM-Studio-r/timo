@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>GapGPT - Gemini UI</title>
+    <title>Aio</title>
 
     <script>
     // پیکربندی پیشرفته MathJax برای رندر فوق‌العاده دقیق فرمول‌های پویا
@@ -24,9 +24,23 @@
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
+        @font-face {
+            font-family: 'ginkg';
+            src: url('x.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'ginkgo';
+            src: url('n.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'ginkgoo';
+            src: url('e.ttf') format('truetype');
+        }
+
+        /* اعمال فونت روی کل بدنه سایت */
         :root {
-            --bg-color: #131314;
-            --sidebar-bg: #1e1f20;
+            --bg-color: #0f0f0f;
+            --sidebar-bg: #131314;
             --text-color: #e3e3e3;
             --text-muted: #c4c7c5;
             --border-color: #444746;
@@ -50,7 +64,10 @@
 
         * {
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, Tahoma, sans-serif;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             transition: background-color 0.2s, color 0.2s;
         }
 
@@ -58,6 +75,10 @@
             margin: 0;
             height: 100vh;
             display: flex;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             background: var(--bg-color);
             color: var(--text-color);
             overflow: hidden;
@@ -166,11 +187,15 @@
             background: var(--border-color);
             padding: 2px 6px;
             border-radius: 6px;
-            font-family: monospace;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             font-size: 0.95em;
             direction: ltr;
-            text-align: left;
             display: inline-block;
+            direction: ltr;
+            text-align: left;             
         }
 
         .code-container {
@@ -190,6 +215,8 @@
             padding: 6px 16px;
             background: #1e1e1e;
             border-bottom: 1px solid #333;
+            direction: ltr;
+            text-align: left;             
         }
 
         .copy-btn {
@@ -198,6 +225,8 @@
             color: #aaa;
             cursor: pointer;
             font-size: 12px;
+            direction: rtl;
+            text-align: right;             
         }
         .copy-btn:hover { color: #fff; }
 
@@ -205,10 +234,13 @@
             margin: 0;
             padding: 16px;
             overflow-x: auto;
-            font-family: monospace;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             font-size: 14px;
             direction: ltr;
-            text-align: left;
+            text-align: left;            
         }
 
         .input-wrapper {
@@ -232,6 +264,10 @@
             border: none;
             color: var(--text-color);
             font-size: 16px;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
             resize: none;
             max-height: 180px;
             min-height: 28px;
@@ -609,7 +645,7 @@
                 mathBtn.style.fontSize = "11px";
                 mathBtn.onclick = () => {
                     const encodedQuery = encodeURIComponent(text);
-                    window.open(`nit5.html?action=process&value=${encodedQuery}`, '_blank');
+                    window.open(`xmath.html?action=process&value=${encodedQuery}`, '_blank');
                 };
         
                 actionsDiv.appendChild(copyBtn);

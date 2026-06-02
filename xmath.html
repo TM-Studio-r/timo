@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Gemini Math Renderer</title>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+
+<script defer src="tex-mml-chtml.js"></script>
+
+<style>
+@font-face {
+    font-family: 'ginkg';
+    src: url('x.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'ginkgo';
+    src: url('n.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'ginkgoo';
+    src: url('e.ttf') format('truetype');
+}
+
+body{
+    margin:0;
+    background:#0f0f0f;
+    color:white;
+    font-family:tahoma,sans-serif;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+textarea{
+    background:#1e1e1e;
+    color:white;
+    border:none;
+    border-radius:15px;
+    padding:0;
+    font-size:0px;
+    resize:none;
+    box-sizing:border-box;
+    width: 0;
+    height: 0;
+}
+
+
+.output{
+    margin-top:25px;
+    background:#1e1e1e;
+    border-radius:15px;
+    padding:20px;
+    line-height:2;
+    overflow-x:auto;
+    font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+    font-weight: 500;
+    font-variation-settings: 'ROND' 100;
+    font-style: normal;
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+
+<textarea id="input"
+placeholder="متن جمنای را اینجا Paste کن"></textarea>
+
+<div class="output" id="output"></div>
+
+</div>
+
+<script>
+
+function renderText(){
+
+    const text =
+        document.getElementById("input").value;
+
+    document.getElementById("output").innerHTML =
+        text.replace(/\n/g,"<br>");
+
+    MathJax.typesetPromise();
+}
+window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const value = urlParams.get('value');
+    const ta = document.getElementById('input');
+    ta.value = value;
+    renderText();
+});
+
+</script>
+
+</body>
+</html>
