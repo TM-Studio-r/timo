@@ -57,10 +57,6 @@
             margin: 0;
             height: 100vh;
             display: flex;
-            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
-            font-weight: 500;
-            font-variation-settings: 'ROND' 100;
-            font-style: normal;
             background: var(--bg-color);
             color: var(--text-color);
             overflow: hidden;
@@ -585,6 +581,7 @@
                 copyBtn.textContent = "📋 کپی";
                 copyBtn.style.fontSize = "11px";
                 copyBtn.onclick = () => {
+                    // متغیر text اینجا دقیقاً همون رشته خامِ دست‌نخورده‌ست!
                     navigator.clipboard.writeText(text);
                     alert("پیام کپی شد!");
                 };
@@ -594,6 +591,7 @@
                 mathBtn.textContent = "🧮 ریاضی";
                 mathBtn.style.fontSize = "11px";
                 mathBtn.onclick = () => {
+                    // متغیر text اینجا همون رشته خامِ دست‌نخورده‌ست!
                     const encodedQuery = encodeURIComponent(text);
                     window.open(`xmath.html?action=process&value=${encodedQuery}`, '_blank');
                 };
